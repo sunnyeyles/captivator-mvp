@@ -1,0 +1,174 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Tailwind skips workspace packages unless told, and the portal renderer uses utilities */
+@source "../../../packages/portal/src";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Falls back to the system font when layout.tsx does not set --font-geist-sans */
+  --font-sans: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  /* Pair chart colours with labels or patterns so categories never rely on colour alone */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-editor-canvas: var(--editor-canvas);
+  --color-editor-selection: var(--editor-selection);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.625rem;
+
+  --background: var(--color-stone-50);
+  --foreground: var(--color-stone-950);
+  --card: var(--color-white);
+  --card-foreground: var(--color-stone-950);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-stone-950);
+
+  /* Orange-700 is the lightest orange that passes WCAG AA with white text */
+  --primary: var(--color-orange-700);
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-stone-100);
+  --secondary-foreground: var(--color-stone-900);
+  --muted: var(--color-stone-100);
+  --muted-foreground: var(--color-stone-600);
+  --accent: var(--color-stone-100);
+  --accent-foreground: var(--color-stone-900);
+  --destructive: var(--color-red-700);
+  --destructive-foreground: var(--color-white);
+  --border: var(--color-stone-200);
+  --input: var(--color-stone-200);
+  --ring: var(--color-orange-700);
+
+  --success: var(--color-emerald-700);
+  --success-foreground: var(--color-white);
+  --warning: var(--color-amber-700);
+  --warning-foreground: var(--color-white);
+
+  /* Keep the series order fixed so chart colours stay stable between releases */
+  --chart-1: var(--color-orange-700);
+  --chart-2: var(--color-teal-700);
+  --chart-3: var(--color-sky-700);
+  --chart-4: var(--color-violet-700);
+  --chart-5: var(--color-amber-700);
+
+  --sidebar: var(--color-white);
+  --sidebar-foreground: var(--color-stone-950);
+  --sidebar-primary: var(--color-orange-700);
+  --sidebar-primary-foreground: var(--color-white);
+  --sidebar-accent: var(--color-stone-100);
+  --sidebar-accent-foreground: var(--color-stone-900);
+  --sidebar-border: var(--color-stone-200);
+  --sidebar-ring: var(--color-orange-700);
+
+  --editor-canvas: var(--color-stone-200);
+  --editor-selection: var(--color-orange-700);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: var(--color-stone-950);
+  --foreground: var(--color-stone-50);
+  --card: var(--color-stone-900);
+  --card-foreground: var(--color-stone-50);
+  --popover: var(--color-stone-900);
+  --popover-foreground: var(--color-stone-50);
+
+  --primary: var(--color-orange-400);
+  --primary-foreground: var(--color-stone-950);
+  --secondary: var(--color-stone-800);
+  --secondary-foreground: var(--color-stone-50);
+  --muted: var(--color-stone-800);
+  --muted-foreground: var(--color-stone-400);
+  --accent: var(--color-stone-800);
+  --accent-foreground: var(--color-stone-50);
+  --destructive: var(--color-red-400);
+  --destructive-foreground: var(--color-stone-950);
+  --border: var(--color-stone-800);
+  --input: var(--color-stone-800);
+  --ring: var(--color-orange-400);
+
+  --success: var(--color-emerald-400);
+  --success-foreground: var(--color-stone-950);
+  --warning: var(--color-amber-400);
+  --warning-foreground: var(--color-stone-950);
+
+  --chart-1: var(--color-orange-400);
+  --chart-2: var(--color-teal-400);
+  --chart-3: var(--color-sky-400);
+  --chart-4: var(--color-violet-400);
+  --chart-5: var(--color-amber-400);
+
+  --sidebar: var(--color-stone-900);
+  --sidebar-foreground: var(--color-stone-50);
+  --sidebar-primary: var(--color-orange-400);
+  --sidebar-primary-foreground: var(--color-stone-950);
+  --sidebar-accent: var(--color-stone-800);
+  --sidebar-accent-foreground: var(--color-stone-50);
+  --sidebar-border: var(--color-stone-800);
+  --sidebar-ring: var(--color-orange-400);
+
+  --editor-canvas: var(--color-stone-950);
+  --editor-selection: var(--color-orange-400);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
