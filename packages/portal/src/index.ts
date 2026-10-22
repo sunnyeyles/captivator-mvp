@@ -11,6 +11,7 @@ export {
   BUTTON_WIDTH_MIN,
   buttonSchema,
   colorSchema,
+  devices,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
   fontWeights,

@@ -4,7 +4,7 @@ import {
   resolveForDevice,
   setDeviceOverride,
 } from "./overrides";
-import type { TextElement } from "./schema";
+import { devices, type TextElement } from "./schema";
 
 const text: TextElement = {
   id: "greeting",
@@ -16,7 +16,7 @@ const text: TextElement = {
 };
 
 describe("resolveForDevice", () => {
-  it.each(["desktop", "mobile"] as const)(
+  it.each(devices)(
     "uses the shared values on %s when nothing is overridden",
     (device) => {
       expect(resolveForDevice(text, device)).toEqual(text);

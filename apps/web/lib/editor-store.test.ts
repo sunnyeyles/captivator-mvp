@@ -55,6 +55,9 @@ describe("usePortalEditorStore", () => {
     getState().setDeviceMode("mobile");
     expect(getState().deviceMode).toBe("mobile");
 
+    getState().setDeviceMode("tablet");
+    expect(getState().deviceMode).toBe("tablet");
+
     getState().setDeviceMode("desktop");
     expect(getState().deviceMode).toBe("desktop");
   });

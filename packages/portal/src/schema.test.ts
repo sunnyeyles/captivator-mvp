@@ -113,6 +113,7 @@ describe("textElementSchema", () => {
     undefined,
     {},
     { mobile: { fontSize: 24 } },
+    { tablet: { fontSize: 32, textAlign: "left" } },
     {
       desktop: { textAlign: "left" },
       mobile: { fontSize: FONT_SIZE_MIN, textAlign: "right" },
@@ -128,6 +129,7 @@ describe("textElementSchema", () => {
     { mobile: { fontSize: FONT_SIZE_MAX + 1 } },
     { desktop: { fontSize: 20.5 } },
     { mobile: { textAlign: "justify" } },
+    { tablet: { fontSize: FONT_SIZE_MAX + 1 } },
   ])("validates override %j like the shared style", (overrides) => {
     expect(textElementSchema.safeParse({ ...text, overrides }).success).toBe(
       false,

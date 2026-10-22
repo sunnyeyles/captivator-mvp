@@ -7,6 +7,7 @@ export function deviceOverridesSchema<Style extends z.ZodObject>(style: Style) {
   const override = style.partial().strict();
   return z.object({
     desktop: override.optional(),
+    tablet: override.optional(),
     mobile: override.optional(),
   });
 }

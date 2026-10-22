@@ -40,7 +40,7 @@ Constraints that span these packages:
 - Data flows one way: controls/canvas → Zustand store → `PortalConfig` → renderer → desktop/mobile view.
 - The renderer (`SplashPage({ config, device, mode })`) must not import Zustand or editor code. It stays reusable for published pages, and the editor passes callbacks in.
 - Templates are config presets drawn by the shared renderer, never separate page implementations.
-- Desktop and mobile share one config. Device-specific values are explicit overrides that fall back to the shared value.
+- Desktop, tablet and mobile share one config. Device-specific values are explicit overrides that fall back to the shared value.
 - Customer branding styles only the portal canvas, never the editor UI.
 - At most two guest fields. Preview never triggers a real network connection.
 

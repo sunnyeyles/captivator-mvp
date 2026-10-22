@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CONNECT_BUTTON_ID, defaultPortalConfig } from "../defaults";
-import type { PortalConfig } from "../schema";
+import { devices, type PortalConfig } from "../schema";
 import { LOGO_ELEMENT_ID, SplashPage } from "./splash-page";
 
 const config: PortalConfig = {
@@ -48,32 +48,28 @@ const imageConfig: PortalConfig = {
 const noop = () => {};
 
 describe("SplashPage", () => {
-  it.each(["desktop", "mobile"] as const)(
-    "renders the config on %s",
-    (device) => {
-      const html = renderToStaticMarkup(
-        <SplashPage config={config} device={device} mode="edit" />,
-      );
-
-      expect(html).toContain("Hello guests");
-      expect(html).toContain("background-color:#00ff00");
-      expect(html).toContain("color:#ff0000");
-      expect(html).toContain("font-size:40px");
-      expect(html).toContain("font-weight:600");
-      expect(html).toContain("text-align:right");
-      expect(html).toContain(`data-device="${device}"`);
-    },
-  );
-
-  it("lays desktop and mobile out differently from the same config", () => {
-    const desktop = renderToStaticMarkup(
-      <SplashPage config={defaultPortalConfig} device="desktop" mode="edit" />,
-    );
-    const mobile = renderToStaticMarkup(
-      <SplashPage config={defaultPortalConfig} device="mobile" mode="edit" />,
+  it.each(devices)("renders the config on %s", (device) => {
+    const html = renderToStaticMarkup(
+      <SplashPage config={config} device={device} mode="edit" />,
     );
 
-    expect(desktop).not.toEqual(mobile);
+    expect(html).toContain("Hello guests");
+    expect(html).toContain("background-color:#00ff00");
+    expect(html).toContain("color:#ff0000");
+    expect(html).toContain("font-size:40px");
+    expect(html).toContain("font-weight:600");
+    expect(html).toContain("text-align:right");
+    expect(html).toContain(`data-device="${device}"`);
+  });
+
+  it("lays each device out differently from the same config", () => {
+    const layouts = devices.map((device) =>
+      renderToStaticMarkup(
+        <SplashPage config={defaultPortalConfig} device={device} mode="edit" />,
+      ),
+    );
+
+    expect(new Set(layouts).size).toBe(devices.length);
   });
 
   it("applies a device's overrides only on that device", () => {
@@ -99,6 +95,18 @@ describe("SplashPage", () => {
     expect(mobile).toContain("text-align:left");
   });
 
+  it("keeps the shared style on tablet when only mobile is overridden", () => {
+    const overridden: PortalConfig = {
+      ...config,
+      texts: [{ ...config.texts[0]!, overrides: { mobile: { fontSize: 24 } } }],
+    };
+    const tablet = renderToStaticMarkup(
+      <SplashPage config={overridden} device="tablet" mode="preview" />,
+    );
+
+    expect(tablet).toContain("font-size:40px");
+  });
+
   it("falls back to shared values a device does not override", () => {
     const overridden: PortalConfig = {
       ...config,
@@ -113,7 +121,7 @@ describe("SplashPage", () => {
     expect(mobile).toContain("font-weight:600");
   });
 
-  it.each(["desktop", "mobile"] as const)(
+  it.each(devices)(
     "marks the selected element in edit mode on %s",
     (device) => {
       const html = renderToStaticMarkup(
@@ -175,19 +183,16 @@ describe("SplashPage", () => {
     expect(onSelectElement).not.toHaveBeenCalled();
   });
 
-  it.each(["desktop", "mobile"] as const)(
-    "renders guest fields in order on %s",
-    (device) => {
-      const html = renderToStaticMarkup(
-        <SplashPage config={config} device={device} mode="preview" />,
-      );
+  it.each(devices)("renders guest fields in order on %s", (device) => {
+    const html = renderToStaticMarkup(
+      <SplashPage config={config} device={device} mode="preview" />,
+    );
 
-      expect(html.indexOf("Mobile")).toBeLessThan(html.indexOf("Name"));
-      expect(html).toContain('type="tel"');
-      expect(html).toContain('placeholder="Who are you?"');
-      expect(html).toContain("required");
-    },
-  );
+    expect(html.indexOf("Mobile")).toBeLessThan(html.indexOf("Name"));
+    expect(html).toContain('type="tel"');
+    expect(html).toContain('placeholder="Who are you?"');
+    expect(html).toContain("required");
+  });
 
   it("falls back to default labels and placeholders", () => {
     const html = renderToStaticMarkup(
@@ -220,20 +225,17 @@ describe("SplashPage", () => {
     expect(html).toContain("Get online");
   });
 
-  it.each(["desktop", "mobile"] as const)(
-    "styles the Connect button on %s",
-    (device) => {
-      const html = renderToStaticMarkup(
-        <SplashPage config={config} device={device} mode="preview" />,
-      );
+  it.each(devices)("styles the Connect button on %s", (device) => {
+    const html = renderToStaticMarkup(
+      <SplashPage config={config} device={device} mode="preview" />,
+    );
 
-      expect(html).toContain("Get online");
-      expect(html).toContain("background-color:#123456");
-      expect(html).toContain("color:#abcdef");
-      expect(html).toContain("border-radius:20px");
-      expect(html).toContain("width:60%");
-    },
-  );
+    expect(html).toContain("Get online");
+    expect(html).toContain("background-color:#123456");
+    expect(html).toContain("color:#abcdef");
+    expect(html).toContain("border-radius:20px");
+    expect(html).toContain("width:60%");
+  });
 
   it.each(["edit", "preview", "published"] as const)(
     "has nothing that can submit or navigate in %s mode",
@@ -283,23 +285,20 @@ describe("SplashPage", () => {
     expect(html).not.toContain("data-element-id");
   });
 
-  it.each(["desktop", "mobile"] as const)(
-    "renders the logo and background image on %s",
-    (device) => {
-      const html = renderToStaticMarkup(
-        <SplashPage config={imageConfig} device={device} mode="preview" />,
-      );
+  it.each(devices)("renders the logo and background image on %s", (device) => {
+    const html = renderToStaticMarkup(
+      <SplashPage config={imageConfig} device={device} mode="preview" />,
+    );
 
-      expect(html).toContain('src="blob:http://localhost/logo"');
-      expect(html).toContain('alt="Acme logo"');
-      expect(html).toContain(
-        "background-image:url(&quot;blob:http://localhost/background&quot;)",
-      );
-      expect(html).toContain("background-size:contain");
-      expect(html).toContain("background-position:top");
-      expect(html).toContain("opacity:0.25");
-    },
-  );
+    expect(html).toContain('src="blob:http://localhost/logo"');
+    expect(html).toContain('alt="Acme logo"');
+    expect(html).toContain(
+      "background-image:url(&quot;blob:http://localhost/background&quot;)",
+    );
+    expect(html).toContain("background-size:contain");
+    expect(html).toContain("background-position:top");
+    expect(html).toContain("opacity:0.25");
+  });
 
   it("keeps the logo and background image when switching device", () => {
     const desktop = renderToStaticMarkup(

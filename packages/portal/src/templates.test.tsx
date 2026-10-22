@@ -1,10 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SplashPage } from "./renderer/splash-page";
-import { portalConfigSchema } from "./schema";
+import { devices, portalConfigSchema } from "./schema";
 import { templateIds, templates } from "./templates";
-
-const devices = ["desktop", "mobile"] as const;
 
 describe("templates", () => {
   it("offers Minimal, Event and Corporate", () => {

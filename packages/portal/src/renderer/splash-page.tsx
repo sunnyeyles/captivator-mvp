@@ -36,6 +36,12 @@ const layoutByDevice: Record<
     form: "max-w-sm",
     logo: "max-h-28",
   },
+  tablet: {
+    page: "px-12",
+    content: "max-w-xl gap-4",
+    form: "max-w-sm",
+    logo: "max-h-24",
+  },
   mobile: {
     page: "px-6",
     content: "max-w-full gap-3",

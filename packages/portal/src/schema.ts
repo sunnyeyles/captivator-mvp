@@ -190,6 +190,9 @@ export type Logo = z.infer<typeof logoSchema>;
 
 export type BackgroundImage = z.infer<typeof backgroundImageSchema>;
 
-export type Device = "desktop" | "mobile";
+/** The devices a splash page is designed and previewed for, largest first. */
+export const devices = ["desktop", "tablet", "mobile"] as const;
+
+export type Device = (typeof devices)[number];
 
 export type RenderMode = "edit" | "preview" | "published";

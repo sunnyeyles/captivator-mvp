@@ -1,12 +1,12 @@
 "use client";
 
-import type { Device } from "@repo/portal";
-import { Monitor, Smartphone } from "lucide-react";
+import { devices, type Device } from "@repo/portal";
+import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
 function isDevice(value: string): value is Device {
-  return value === "desktop" || value === "mobile";
+  return devices.some((device) => device === value);
 }
 
 export function DeviceModeSwitcher() {
@@ -26,6 +26,10 @@ export function DeviceModeSwitcher() {
       <ToggleGroupItem value="desktop" aria-label="Desktop">
         <Monitor />
         Desktop
+      </ToggleGroupItem>
+      <ToggleGroupItem value="tablet" aria-label="Tablet">
+        <Tablet />
+        Tablet
       </ToggleGroupItem>
       <ToggleGroupItem value="mobile" aria-label="Mobile">
         <Smartphone />

@@ -6,6 +6,7 @@ import { usePortalEditorStore } from "@/lib/editor-store";
 
 const frameSizes: Record<Device, { width: number; height: number }> = {
   desktop: { width: 1280, height: 800 },
+  tablet: { width: 820, height: 1180 },
   mobile: { width: 390, height: 844 },
 };
 
@@ -84,7 +85,7 @@ export function DesignCanvas() {
     >
       {scale > 0 ? (
         <div
-          className="shrink-0 overflow-hidden rounded-lg shadow-lg ring-1 ring-border data-[device=mobile]:rounded-[2rem]"
+          className="shrink-0 overflow-hidden rounded-lg shadow-lg ring-1 ring-border data-[device=mobile]:rounded-[2rem] data-[device=tablet]:rounded-[1.5rem]"
           data-device={deviceMode}
           style={{ width: frame.width * scale, height: frame.height * scale }}
         >

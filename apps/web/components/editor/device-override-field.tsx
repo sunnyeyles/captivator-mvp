@@ -1,12 +1,13 @@
 "use client";
 
 import type { Device } from "@repo/portal";
-import { Monitor, RotateCcw, Smartphone } from "lucide-react";
+import { Monitor, RotateCcw, Smartphone, Tablet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
 const devices: Record<Device, { name: string; icon: typeof Monitor }> = {
   desktop: { name: "desktop", icon: Monitor },
+  tablet: { name: "tablet", icon: Tablet },
   mobile: { name: "mobile", icon: Smartphone },
 };
 
