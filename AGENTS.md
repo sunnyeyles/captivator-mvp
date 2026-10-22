@@ -23,7 +23,7 @@ pnpm workspace (pnpm 11, Node >= 24) orchestrated by Turborepo. Run from the roo
 - `pnpm exec turbo test:watch --filter=<workspace>`: Vitest in watch mode
 - `pnpm format`: Prettier on `**/*.{ts,tsx,md}`
 
-Lint runs with `--max-warnings 0`, so any warning fails the build. The shared ESLint config does not yet match `.ts`/`.tsx` files, so lint currently checks only the JS config files and `check-types` is the real source check. Tests use Vitest, one `vitest.config.ts` per workspace, with test files beside the code as `*.test.ts(x)`.
+Lint runs with `--max-warnings 0`, so any warning fails the build. Lint checks `.ts` and `.tsx` source with `typescript-eslint`, which parses with its own TypeScript 6 in `packages/eslint-config` because TypeScript 7 has no JS API; `tsc` and `check-types` use TypeScript 7. Tests use Vitest, one `vitest.config.ts` per workspace, with test files beside the code as `*.test.ts(x)`.
 
 Before calling a change done, run `lint`, `check-types` and `test` for every workspace it touches and fix what it broke. Report each check as run and passed, run and failed (with output), or not run.
 

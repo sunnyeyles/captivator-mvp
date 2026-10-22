@@ -4,12 +4,12 @@
 
 **Blocked by:** 05, 06 (run once the whole stack has landed, so every file is linted at once)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `typescript-eslint` is installed in the shared ESLint config package
-- [ ] The shared config matches `.ts` and `.tsx` files and parses TS and TSX syntax, including in Next.js and React workspaces
-- [ ] Every workspace's `lint` checks its source files (verified by introducing a deliberate violation and seeing lint fail, then removing it)
-- [ ] Any violations surfaced in existing code are fixed rather than suppressed; any rule disabled is justified in a one-line comment
-- [ ] The import guard test for `packages/portal` stays in place, or is replaced by an equivalent lint rule that fails on Zustand or editor imports
-- [ ] AGENTS.md no longer says lint skips TypeScript
-- [ ] `lint`, `check-types`, tests and `build` are run for every workspace touched, and each is reported as passed, failed (with output) or not run
+- [x] `typescript-eslint` is installed in the shared ESLint config package
+- [x] The shared config matches `.ts` and `.tsx` files and parses TS and TSX syntax, including in Next.js and React workspaces
+- [x] Every workspace's `lint` checks its source files (verified by introducing a deliberate violation and seeing lint fail, then removing it)
+- [x] Any violations surfaced in existing code are fixed rather than suppressed; any rule disabled is justified in a one-line comment
+- [x] The import guard test for `packages/portal` stays in place, or is replaced by an equivalent lint rule that fails on Zustand or editor imports
+- [x] AGENTS.md no longer says lint skips TypeScript
+- [x] `lint`, `check-types`, tests and `build` are run for every workspace touched, and each is reported as passed, failed (with output) or not run

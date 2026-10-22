@@ -20,6 +20,7 @@ import {
   textElementSchema,
   type ConnectButton,
   type GuestField,
+  type PortalConfig,
   type TextElement,
 } from "./schema";
 
@@ -288,7 +289,8 @@ describe("buttonSchema", () => {
   );
 
   it("rejects a config without a button", () => {
-    const { button: _button, ...withoutButton } = defaultPortalConfig;
+    const withoutButton: Partial<PortalConfig> = { ...defaultPortalConfig };
+    delete withoutButton.button;
 
     expect(portalConfigSchema.safeParse(withoutButton).success).toBe(false);
   });
