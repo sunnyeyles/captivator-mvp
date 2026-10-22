@@ -11,7 +11,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ## Project
 
-A visual Wi-Fi splash page (captive portal) builder. `SPEC.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, shadcn/ui, Zustand and Lucide in `apps/web`, Zod in `packages/portal`, plus Vitest for tests. `packages/ui` still holds the starter's stub components.
+A visual Wi-Fi splash page (captive portal) builder. `docs/MVP_SPEC.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, shadcn/ui, Zustand and Lucide in `apps/web`, Zod in `packages/portal`, plus Vitest for tests. `packages/ui` still holds the starter's stub components.
 
 ## Commands
 
@@ -27,7 +27,7 @@ Lint runs with `--max-warnings 0`, so any warning fails the build. The shared ES
 
 Before calling a change done, run `lint`, `check-types` and `test` for every workspace it touches and fix what it broke. Report each check as run and passed, run and failed (with output), or not run.
 
-## Architecture (from SPEC.md)
+## Architecture (from docs/MVP_SPEC.md)
 
 - `apps/web`: editor shell (toolbar, properties sidebar, design canvas), the Zustand store, and for now the shadcn/ui components (`components/ui`) and editor theme tokens (`app/globals.css`)
 - `packages/portal`: portal config schema (Zod), defaults, templates and the `SplashPage` renderer
