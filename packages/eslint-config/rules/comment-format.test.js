@@ -29,6 +29,15 @@ ruleTester.run("comment-format", commentFormat, {
     '/// <reference types="vite/client" />',
     "const a = <div>{/* Inert so the preview never takes focus */}</div>;",
     "// First thought\nconst a = 1;\n// Second thought\nconst b = 2;",
+    "export const a = /*#__PURE__*/ f();",
+    'const a = import(/* webpackChunkName: "a" */ "./a");',
+    "const a = import(/* @vite-ignore */ path);",
+    "/* global window, document: readonly */\nwindow.a = 1;",
+    "/* eslint no-console: off */\nconsole.log(1);",
+    "// useMemo keeps the reference stable\nconst a = 1;",
+    "// fetch() resolves before the timer\nconst a = 1;",
+    '/** @type {import("eslint").Linter.Config[]} */\nconst a = [];',
+    "/**\n * Shared config for the repo.\n *\n * @type {string}\n */\nexport const a = '';",
   ],
   invalid: [
     {
@@ -58,6 +67,46 @@ ruleTester.run("comment-format", commentFormat, {
     {
       code: "const a = (\n  <div>\n    {/* First line\n        second line */}\n  </div>\n);",
       errors: [{ messageId: "multiLine" }],
+    },
+    {
+      code: "// global state is cached here.\nconst a = 1;",
+      errors: [{ messageId: "trailingPeriod" }, { messageId: "sentenceCase" }],
+    },
+    {
+      code: "// FIXME: later\nconst a = 1;",
+      errors: [{ messageId: "todoWithoutTicket" }],
+    },
+    {
+      code: "// HACK around the bug\nconst a = 1;",
+      errors: [{ messageId: "todoWithoutTicket" }],
+    },
+    {
+      code: "// ------------------------\nconst a = 1;",
+      errors: [{ messageId: "divider" }],
+    },
+    {
+      code: "// ===== Section =====\nconst a = 1;",
+      errors: [{ messageId: "divider" }],
+    },
+    {
+      code: "// lowercase start\nconst a = 1;",
+      errors: [{ messageId: "sentenceCase" }],
+    },
+    {
+      code: "/********** BANNER **********/\nconst a = 1;",
+      errors: [{ messageId: "blockComment" }],
+    },
+    {
+      code: "/** Not exported */\nfunction a() {}",
+      errors: [{ messageId: "jsdocNotExported" }],
+    },
+    {
+      code: "/**\n * First sentence.\n * Second sentence.\n */\nexport function a() {}",
+      errors: [{ messageId: "jsdocSentences" }],
+    },
+    {
+      code: "const o = {/* Inside an object */};",
+      errors: [{ messageId: "blockComment" }],
     },
   ],
 });
