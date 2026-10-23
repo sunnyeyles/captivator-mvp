@@ -54,6 +54,7 @@
 
   --color-editor-canvas: var(--editor-canvas);
   --color-editor-selection: var(--editor-selection);
+  --color-overlay: var(--overlay);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -113,6 +114,7 @@
 
   --editor-canvas: var(--color-stone-200);
   --editor-selection: var(--color-orange-700);
+  --overlay: var(--color-black);
 }
 
 .dark {
@@ -161,6 +163,7 @@
 
   --editor-canvas: var(--color-stone-950);
   --editor-selection: var(--color-orange-400);
+  --overlay: var(--color-black);
 }
 
 @layer base {

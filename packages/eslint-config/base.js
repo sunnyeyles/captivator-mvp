@@ -25,7 +25,7 @@ export const config = [
     },
   },
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
     plugins: {
       local: {
         rules: {
