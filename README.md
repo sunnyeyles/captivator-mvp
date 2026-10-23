@@ -2,7 +2,7 @@
 
 A visual builder for Wi-Fi splash pages (captive portals). Design a page once and preview it on desktop, tablet and mobile.
 
-The product and technical spec is in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md).
+The product and technical spec is in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md). If you're reviewing the repo, start with the [reviewer notes](docs/REVIEW.md).
 
 ## Workspaces
 
