@@ -1,9 +1,9 @@
 "use client";
 
-import { X } from "lucide-react";
+import { guestFieldDefaults } from "@repo/portal";
+import { ArrowLeft } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@repo/ui/button";
-import { Separator } from "@repo/ui/separator";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import {
   findSelectedElement,
@@ -32,12 +32,21 @@ function ElementControls({ selected }: { selected: SelectedElement }) {
   }
 }
 
-const titleByKind: Record<SelectedElement["kind"], string> = {
-  text: "Text",
-  field: "Guest field",
-  button: "Connect button",
-  logo: "Logo",
-};
+function elementName(selected: SelectedElement) {
+  switch (selected.kind) {
+    case "text":
+      return selected.element.text.trim() || "Empty text";
+    case "field":
+      return (
+        selected.element.label ||
+        guestFieldDefaults[selected.element.type].label
+      );
+    case "button":
+      return "Connect button";
+    case "logo":
+      return "Logo";
+  }
+}
 
 export function SelectedElementControls() {
   // Shallow so edits to other elements leave these controls alone
@@ -51,28 +60,26 @@ export function SelectedElementControls() {
   if (!selected) return null;
 
   return (
-    <>
-      <section aria-labelledby="selected-group" className="grid gap-3 p-4">
-        <div className="flex items-center justify-between">
-          <h3
-            id="selected-group"
-            className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-          >
-            Selected: {titleByKind[selected.kind]}
-          </h3>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Clear selection"
-            onClick={() => selectElement(null)}
-          >
-            <X />
-          </Button>
-        </div>
-        {/* Keyed by id so half-typed drafts never carry over to another element */}
-        <ElementControls key={selected.id} selected={selected} />
-      </section>
-      <Separator />
-    </>
+    <section aria-labelledby="selected-group" className="grid gap-4 p-4">
+      <div className="grid justify-items-start gap-1">
+        <Button
+          variant="ghost"
+          size="xs"
+          className="-ml-2 text-muted-foreground"
+          onClick={() => selectElement(null)}
+        >
+          <ArrowLeft />
+          Back to page
+        </Button>
+        <h2
+          id="selected-group"
+          className="max-w-full truncate text-sm font-semibold"
+        >
+          {elementName(selected)}
+        </h2>
+      </div>
+      {/* Keyed by id so half-typed drafts never carry over to another element */}
+      <ElementControls key={selected.id} selected={selected} />
+    </section>
   );
 }

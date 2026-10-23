@@ -9,7 +9,6 @@ import {
 } from "@repo/portal";
 import { Button } from "@repo/ui/button";
 import { PortalThumbnail } from "@/components/preview/portal-thumbnail";
-import { usePortalEditorStore } from "@/lib/editor-store";
 
 export function TemplateGrid({
   selectedId,
@@ -52,19 +51,5 @@ export function TemplateGrid({
         );
       })}
     </ul>
-  );
-}
-
-export function TemplateGallery() {
-  const templateId = usePortalEditorStore((state) => state.templateId);
-  const brand = usePortalEditorStore((state) => state.brand);
-  const setTemplate = usePortalEditorStore((state) => state.setTemplate);
-
-  return (
-    <TemplateGrid
-      selectedId={templateId}
-      brand={brand}
-      onSelect={setTemplate}
-    />
   );
 }

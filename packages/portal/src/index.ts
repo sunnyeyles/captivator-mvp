@@ -49,6 +49,7 @@ export {
 } from "./schema";
 export {
   clearDeviceOverride,
+  clearOverridesFor,
   deviceOverridesSchema,
   resolveForDevice,
   setDeviceOverride,

@@ -116,20 +116,17 @@ The editor contains three main areas.
 ### Application Toolbar
 
 - Application identity
-- Template selection
 - Desktop/Tablet/Mobile mode switcher
-- Optional reset, undo and redo controls
+- Undo and redo, a Preview toggle, Save and Publish
+- A menu holding Reset to template, away from undo so it is not hit by mistake
 
 ### Properties Sidebar
 
-Grouped editing controls:
+The sidebar shows one thing at a time, so the customer always knows where an edit goes.
 
-1. Templates
-2. Branding and images
-3. Background
-4. Text
-5. Guest fields
-6. Connect button
+**Nothing selected:** the Page panel holds Change design, one dialog for switching template or generating designs from the customer's website, since both replace the current design. Below it are the page's elements (logo, texts, guest fields and Connect button, with Add text and Add field) and the background. Choosing an element in the list selects it.
+
+**An element selected**, from the list or the canvas: only that element's controls, with a way back to the page.
 
 ### Interactive Design Canvas
 
@@ -212,7 +209,7 @@ Space above adds to the device layout's own spacing between elements. Each overr
 
 Layout arrangement remains a possible future override.
 
-Overrides should be explicit rather than automatically creating separate designs for each device. In the sidebar, the user chooses to override a property for the active device, sees which properties are overridden, and can clear an override back to the shared value. Templates may ship their own overrides, and switching template replaces any existing overrides with the template's.
+The editor does not expose overrides for elements, because a per-field override control made the sidebar hard to read. Overrides come from templates and from brand fitting (a long business name gets a smaller heading on mobile). Every element edit sets the shared value and clears that property's overrides on every device, so an edit always shows on the canvas. Switching template replaces any existing overrides with the template's.
 
 Background image position is the one property that is per device from the start, because each device gets its own automatic position (see section 9). Dragging the image in reposition mode always acts on the active device, so that drag is the explicit choice to override. The sidebar marks the device as adjusted, and **Reset to automatic** clears the override back to the automatic position.
 
