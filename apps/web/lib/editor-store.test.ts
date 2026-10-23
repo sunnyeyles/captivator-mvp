@@ -14,6 +14,7 @@ import {
   HISTORY_LIMIT,
   initialEditorState,
   isAtTemplateDefaults,
+  reusableBrand,
   usePortalEditorStore,
 } from "./editor-store";
 
@@ -1217,6 +1218,7 @@ describe("branded designs", () => {
     name: "Acme Coffee",
     logo: null,
     image: null,
+    imageRecommended: null,
     colors: [],
     primaryColor: null,
     missing: ["logo", "image", "colors"],
@@ -1315,5 +1317,62 @@ describe("branded designs", () => {
     getState().undo();
 
     expect(getState().brandDraft).toBe(brand);
+  });
+
+  it("changes the draft's brand colour without touching the design or history", () => {
+    getState().applyBrandedDesign("minimal", brand);
+    getState().setBrandDraft({ ...brand, colors: ["#1d4ed8"] });
+    const { config, past, future } = getState();
+
+    getState().setBrandDraftColor("#e11d48");
+
+    expect(getState().brandDraft?.primaryColor).toBe("#e11d48");
+    expect(getState().brandDraft?.colors).toEqual(["#1d4ed8"]);
+    expect(getState().config).toBe(config);
+    expect(getState().past).toBe(past);
+    expect(getState().future).toBe(future);
+    expect(getState().brand).toBe(brand);
+  });
+
+  it("ignores an invalid draft colour or a missing draft", () => {
+    getState().setBrandDraftColor("#e11d48");
+    expect(getState().brandDraft).toBeNull();
+
+    getState().setBrandDraft(brand);
+    getState().setBrandDraftColor("red");
+    expect(getState().brandDraft).toBe(brand);
+  });
+
+  it("reuses the draft before the applied brand", () => {
+    const draft = { ...otherBrand, sourceUrl: "https://bean.example/" };
+    expect(reusableBrand(getState())).toBeNull();
+
+    getState().applyBrandedDesign("event", brand);
+    expect(reusableBrand(getState())).toBe(brand);
+
+    getState().setBrandDraft(draft);
+    expect(reusableBrand(getState())).toBe(draft);
+  });
+
+  it("reuses only a brand read from the same address", () => {
+    const draft = { ...otherBrand, sourceUrl: "https://bean.example/" };
+    getState().applyBrandedDesign("event", brand);
+    getState().setBrandDraft(draft);
+
+    expect(reusableBrand(getState(), "https://acme.example/")).toBe(brand);
+    expect(reusableBrand(getState(), "https://bean.example/")).toBe(draft);
+    expect(reusableBrand(getState(), "https://other.example/")).toBeNull();
+  });
+
+  it("leaves the design alone when a refresh replaces the draft", () => {
+    getState().applyBrandedDesign("corporate", brand);
+    getState().updateButton({ label: "Join" });
+    const { config, past } = getState();
+
+    getState().setBrandDraft({ ...brand, primaryColor: "#1d4ed8" });
+
+    expect(getState().config).toBe(config);
+    expect(getState().past).toBe(past);
+    expect(getState().brand).toBe(brand);
   });
 });

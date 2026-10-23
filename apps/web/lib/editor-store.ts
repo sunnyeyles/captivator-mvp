@@ -5,6 +5,7 @@ import {
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
+  colorSchema,
   CONNECT_BUTTON_ID,
   defaultBackgroundImageSettings,
   defaultTextStyle,
@@ -57,6 +58,7 @@ interface PortalEditorActions {
   setTemplate: (id: TemplateId) => void;
   applyBrandedDesign: (templateId: TemplateId, brand: BrandProfile) => void;
   setBrandDraft: (brand: BrandProfile | null) => void;
+  setBrandDraftColor: (color: string) => void;
   reset: () => void;
   undo: () => void;
   redo: () => void;
@@ -250,6 +252,17 @@ export function isAtTemplateDefaults(state: PortalEditorState) {
   );
 }
 
+// The draft holds the latest import and colour choice, so it wins over the applied brand
+export function reusableBrand(state: PortalEditorState, sourceUrl?: string) {
+  return (
+    [state.brandDraft, state.brand].find(
+      (brand) =>
+        brand !== null &&
+        (sourceUrl === undefined || brand.sourceUrl === sourceUrl),
+    ) ?? null
+  );
+}
+
 // A pause this long between edits to the same target starts a new undo step
 export const GESTURE_IDLE_MS = 1000;
 
@@ -351,6 +364,13 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
       }),
 
     setBrandDraft: (brandDraft) => set({ brandDraft }),
+
+    setBrandDraftColor: (primaryColor) =>
+      set((state) =>
+        state.brandDraft && colorSchema.safeParse(primaryColor).success
+          ? { brandDraft: { ...state.brandDraft, primaryColor } }
+          : state,
+      ),
 
     reset: () =>
       set((state) => {

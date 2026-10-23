@@ -1,13 +1,13 @@
 "use client";
 
-import { brandProfileSchema } from "@repo/portal";
-import { LoaderCircle } from "lucide-react";
+import { brandProfileSchema, type BrandProfile } from "@repo/portal";
+import { LoaderCircle, RefreshCw } from "lucide-react";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { usePortalEditorStore } from "@/lib/editor-store";
+import { reusableBrand, usePortalEditorStore } from "@/lib/editor-store";
 import { websiteUrlSchema } from "@/lib/website-url";
 import { BrandDesignChooser } from "./brand-design-chooser";
 
@@ -20,6 +20,7 @@ const GENERIC_ERROR = "Something went wrong reading that site. Try again.";
 
 export function WebsiteBranding() {
   const setBrandDraft = usePortalEditorStore((state) => state.setBrandDraft);
+  const shownBrand = usePortalEditorStore((state) => reusableBrand(state));
   const [url, setUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,13 +29,13 @@ export function WebsiteBranding() {
   const inputId = useId();
   const errorId = useId();
 
-  async function generate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const parsed = websiteUrlSchema.safeParse(url);
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? GENERIC_ERROR);
-      return;
-    }
+  function openDesigns(brand: BrandProfile) {
+    setError(null);
+    setBrandDraft(brand);
+    setChooserOpen(true);
+  }
+
+  async function importSite(href: string) {
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
@@ -44,17 +45,14 @@ export function WebsiteBranding() {
       const response = await fetch("/api/brand-import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: parsed.data.href }),
+        body: JSON.stringify({ url: href }),
         signal: controller.signal,
       });
       const result = importResponseSchema.safeParse(await response.json());
       if (controller.signal.aborted) return;
       if (!result.success) setError(GENERIC_ERROR);
       else if ("error" in result.data) setError(result.data.error.message);
-      else {
-        setBrandDraft(result.data.brand);
-        setChooserOpen(true);
-      }
+      else openDesigns(result.data.brand);
     } catch {
       // A request replaced by a newer submit ends quietly
       if (!controller.signal.aborted) setError(GENERIC_ERROR);
@@ -64,6 +62,26 @@ export function WebsiteBranding() {
         setPending(false);
       }
     }
+  }
+
+  function generate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = websiteUrlSchema.safeParse(url);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? GENERIC_ERROR);
+      return;
+    }
+    // Reading the same site again would only repeat the wait, so Refresh from website is the one way to re-read it
+    const known = reusableBrand(
+      usePortalEditorStore.getState(),
+      parsed.data.href,
+    );
+    if (!known) {
+      void importSite(parsed.data.href);
+      return;
+    }
+    request.current?.abort();
+    openDesigns(known);
   }
 
   return (
@@ -106,6 +124,31 @@ export function WebsiteBranding() {
           {error}
         </p>
       </form>
+      {shownBrand ? (
+        <div className="grid gap-2">
+          <p className="truncate text-sm text-muted-foreground">
+            Branding from {new URL(shownBrand.sourceUrl).host}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openDesigns(shownBrand)}
+            >
+              View designs
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => void importSite(shownBrand.sourceUrl)}
+            >
+              <RefreshCw aria-hidden />
+              Refresh from website
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <BrandDesignChooser open={chooserOpen} onOpenChange={setChooserOpen} />
     </>
   );

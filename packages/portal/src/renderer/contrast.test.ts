@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PortalConfig } from "../schema";
-import { guestLabelStyle, readableTextColor } from "./contrast";
+import { contrastRatio, guestLabelStyle, readableTextColor } from "./contrast";
 
 describe("readableTextColor", () => {
   it.each(["#ffffff", "#fff", "#f5f5f4", "#fde047"])(
@@ -16,6 +16,27 @@ describe("readableTextColor", () => {
       expect(readableTextColor(background)).toBe("#ffffff");
     },
   );
+});
+
+describe("contrastRatio", () => {
+  it.each([
+    ["#000000", "#ffffff", 21],
+    ["#ffffff", "#ffffff", 1],
+    ["#777777", "#ffffff", 4.48],
+    ["#1d4ed8", "#ffffff", 6.7],
+  ])("rates %s against %s at %d:1", (first, second, ratio) => {
+    expect(contrastRatio(first, second)).toBeCloseTo(ratio, 1);
+  });
+
+  it("gives the same ratio in either order", () => {
+    expect(contrastRatio("#fde047", "#1c1917")).toBe(
+      contrastRatio("#1c1917", "#fde047"),
+    );
+  });
+
+  it("reads three-digit colours", () => {
+    expect(contrastRatio("#000", "#fff")).toBe(21);
+  });
 });
 
 describe("guestLabelStyle", () => {
