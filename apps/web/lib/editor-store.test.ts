@@ -18,6 +18,7 @@ import {
   reusableBrand,
   usePortalEditorStore,
 } from "./editor-store";
+import { acmeBrand } from "./test-fixtures";
 
 const { getState } = usePortalEditorStore;
 
@@ -923,16 +924,7 @@ describe("loading a design", () => {
   });
 
   it("restores the design's brand and drops the previous draft", () => {
-    const brand: BrandProfile = {
-      sourceUrl: "https://acme.example/",
-      name: "Acme Coffee",
-      logo: null,
-      image: null,
-      imageRecommended: null,
-      colors: [],
-      primaryColor: null,
-      missing: ["logo", "image", "colors"],
-    };
+    const brand = acmeBrand;
     getState().setBrandDraft({ ...brand, name: "Bean There" });
 
     getState().loadDesign({
@@ -1236,16 +1228,7 @@ describe("repositioning", () => {
 });
 
 describe("branded designs", () => {
-  const brand: BrandProfile = {
-    sourceUrl: "https://acme.example/",
-    name: "Acme Coffee",
-    logo: null,
-    image: null,
-    imageRecommended: null,
-    colors: [],
-    primaryColor: null,
-    missing: ["logo", "image", "colors"],
-  };
+  const brand = acmeBrand;
   const otherBrand: BrandProfile = { ...brand, name: "Bean There" };
 
   it("starts with no brand and no draft", () => {

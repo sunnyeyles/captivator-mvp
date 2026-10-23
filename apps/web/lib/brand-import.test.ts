@@ -8,7 +8,7 @@ import {
   PAGE_MAX_BYTES,
   PAGE_TIMEOUT_MS,
 } from "./brand-import";
-import type { SafeFetchDeps } from "./safe-fetch";
+import { fakeDeps, htmlResponse } from "./test-fixtures";
 
 const SITE = "https://acme.example/";
 
@@ -16,34 +16,10 @@ function page(head: string, body = "") {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
 }
 
-function htmlResponse(html: string) {
-  return new Response(html, {
-    headers: { "content-type": "text/html; charset=utf-8" },
-  });
-}
-
 function jsonResponse(data: unknown, type = "application/manifest+json") {
   return new Response(JSON.stringify(data), {
     headers: { "content-type": type },
   });
-}
-
-function fakeDeps(
-  responses: Record<
-    string,
-    (init: RequestInit) => Response | Promise<Response>
-  >,
-  addresses: Record<string, string> = {},
-) {
-  const fetch = vi.fn<SafeFetchDeps["fetch"]>(async (url, init) => {
-    const respond = responses[url];
-    if (!respond) throw new TypeError("fetch failed");
-    return respond(init);
-  });
-  const lookup = vi.fn<SafeFetchDeps["lookup"]>(async (hostname) => [
-    { address: addresses[hostname] ?? "93.184.216.34", family: 4 },
-  ]);
-  return { fetch, lookup };
 }
 
 async function importPage(html: string, extra = {}) {

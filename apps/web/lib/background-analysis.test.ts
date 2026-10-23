@@ -1,18 +1,14 @@
 import type { BrandProfile } from "@repo/portal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { analyseBrandImage } from "./background-analysis";
+import { acmeBrand } from "./test-fixtures";
 
 const crop = vi.fn();
 vi.mock("smartcrop", () => ({ default: { crop } }));
 
 const brand: BrandProfile = {
-  sourceUrl: "https://acme.example/",
-  name: "Acme Coffee",
-  logo: null,
+  ...acmeBrand,
   image: `data:image/png;base64,${btoa("pixels")}`,
-  imageRecommended: null,
-  colors: [],
-  primaryColor: null,
   missing: ["logo", "colors"],
 };
 
