@@ -4,7 +4,7 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Sliders use the portal's existing min and max constants, and one drag is one undo step
-- [ ] Layout section is collapsed by default
+- [x] Sliders use the portal's existing min and max constants, and one drag is one undo step
+- [x] Layout section is collapsed by default

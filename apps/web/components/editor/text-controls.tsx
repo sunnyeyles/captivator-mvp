@@ -7,19 +7,18 @@ import {
   resolveForDevice,
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
-  textElementSchema,
   type TextElement,
 } from "@repo/portal";
 import { AlignCenter, AlignLeft, AlignRight, Trash2 } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Button } from "@repo/ui/button";
-import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { Textarea } from "@repo/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
-import { ValidatedField } from "./validated-field";
+import { LayoutSection } from "./layout-section";
+import { SliderField } from "./slider-field";
 
 const weightOptions: { value: TextElement["fontWeight"]; label: string }[] = [
   { value: 400, label: "Regular" },
@@ -37,58 +36,6 @@ const alignOptions = [
   label: string;
   icon: unknown;
 }[];
-
-function FontSizeField({
-  fontSize,
-  onChange,
-}: {
-  fontSize: number;
-  onChange: (fontSize: number) => void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const inputId = useId();
-  const errorId = useId();
-  const fontSizeSchema = textElementSchema.shape.fontSize;
-
-  const error =
-    draft === null
-      ? undefined
-      : fontSizeSchema.safeParse(draft === "" ? Number.NaN : Number(draft))
-          .error?.issues[0];
-
-  function handleChange(value: string) {
-    setDraft(value);
-    const parsed = fontSizeSchema.safeParse(
-      value === "" ? Number.NaN : Number(value),
-    );
-    if (parsed.success) onChange(parsed.data);
-  }
-
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor={inputId}>Font size (px)</Label>
-      <Input
-        id={inputId}
-        type="number"
-        inputMode="numeric"
-        min={FONT_SIZE_MIN}
-        max={FONT_SIZE_MAX}
-        step={1}
-        value={draft ?? fontSize}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
-        onChange={(event) => handleChange(event.target.value)}
-        // Drop an out-of-range value so the field shows the size the canvas is actually using
-        onBlur={() => setDraft(null)}
-      />
-      {error ? (
-        <p id={errorId} className="text-sm text-destructive">
-          {error.message}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 export function TextControls({ text }: { text: TextElement }) {
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
@@ -115,11 +62,13 @@ export function TextControls({ text }: { text: TextElement }) {
         color={text.color}
         onChange={(color) => updateText(text.id, { color })}
       />
-      <FontSizeField
-        // Remounts on a device switch so no draft carries across
-        key={`font-size-${deviceMode}`}
-        fontSize={resolved.fontSize}
-        onChange={(fontSize) => updateText(text.id, { fontSize })}
+      <SliderField
+        label="Font size"
+        unit="px"
+        value={resolved.fontSize}
+        min={FONT_SIZE_MIN}
+        max={FONT_SIZE_MAX}
+        onValueChange={(fontSize) => updateText(text.id, { fontSize })}
       />
       <div className="grid gap-2">
         <Label asChild>
@@ -174,18 +123,16 @@ export function TextControls({ text }: { text: TextElement }) {
           ))}
         </ToggleGroup>
       </div>
-      <ValidatedField
-        key={`space-above-${deviceMode}`}
-        label="Space above (px)"
-        type="number"
-        inputMode="numeric"
-        min={SPACE_ABOVE_MIN}
-        max={SPACE_ABOVE_MAX}
-        step={1}
-        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-        schema={textElementSchema.shape.spaceAbove.unwrap()}
-        onValueChange={(spaceAbove) => updateText(text.id, { spaceAbove })}
-      />
+      <LayoutSection>
+        <SliderField
+          label="Space above"
+          unit="px"
+          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
+          min={SPACE_ABOVE_MIN}
+          max={SPACE_ABOVE_MAX}
+          onValueChange={(spaceAbove) => updateText(text.id, { spaceAbove })}
+        />
+      </LayoutSection>
       <Button
         variant="outline"
         size="sm"

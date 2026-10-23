@@ -4,14 +4,14 @@ import {
   layoutDefaults,
   LOGO_MAX_HEIGHT_MAX,
   LOGO_MAX_HEIGHT_MIN,
-  logoSchema,
   resolveForDevice,
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
   type Logo,
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
-import { ValidatedField } from "./validated-field";
+import { LayoutSection } from "./layout-section";
+import { SliderField } from "./slider-field";
 import { ImageUploadField } from "./image-upload-field";
 
 export function LogoControls() {
@@ -46,30 +46,24 @@ export function LogoLayoutControls({ logo }: { logo: Logo }) {
 
   return (
     <div className="grid gap-4">
-      <ValidatedField
-        key={`max-height-${deviceMode}`}
-        label="Max height (px)"
-        type="number"
-        inputMode="numeric"
+      <SliderField
+        label="Size"
+        unit="px"
+        value={resolved.maxHeight ?? layoutDefaults.logoMaxHeight}
         min={LOGO_MAX_HEIGHT_MIN}
         max={LOGO_MAX_HEIGHT_MAX}
-        step={1}
-        value={resolved.maxHeight ?? layoutDefaults.logoMaxHeight}
-        schema={logoSchema.shape.maxHeight.unwrap()}
         onValueChange={(maxHeight) => updateLogo({ maxHeight })}
       />
-      <ValidatedField
-        key={`space-above-${deviceMode}`}
-        label="Space above (px)"
-        type="number"
-        inputMode="numeric"
-        min={SPACE_ABOVE_MIN}
-        max={SPACE_ABOVE_MAX}
-        step={1}
-        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-        schema={logoSchema.shape.spaceAbove.unwrap()}
-        onValueChange={(spaceAbove) => updateLogo({ spaceAbove })}
-      />
+      <LayoutSection>
+        <SliderField
+          label="Space above"
+          unit="px"
+          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
+          min={SPACE_ABOVE_MIN}
+          max={SPACE_ABOVE_MAX}
+          onValueChange={(spaceAbove) => updateLogo({ spaceAbove })}
+        />
+      </LayoutSection>
     </div>
   );
 }

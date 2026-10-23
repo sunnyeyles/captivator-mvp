@@ -6,7 +6,6 @@ import {
   GUEST_FIELD_LABEL_MAX,
   GUEST_FIELD_PLACEHOLDER_MAX,
   guestFieldDefaults,
-  guestFieldSchema,
   guestFieldTypes,
   layoutDefaults,
   resolveForDevice,
@@ -22,7 +21,8 @@ import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
-import { ValidatedField } from "./validated-field";
+import { LayoutSection } from "./layout-section";
+import { SliderField } from "./slider-field";
 
 function isGuestFieldType(value: string): value is GuestFieldType {
   return guestFieldTypes.some((type) => type === value);
@@ -124,30 +124,24 @@ export function GuestFieldControls({ field }: { field: GuestField }) {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <ValidatedField
-        key={`width-${deviceMode}`}
-        label="Width (%)"
-        type="number"
-        inputMode="numeric"
-        min={ELEMENT_WIDTH_MIN}
-        max={ELEMENT_WIDTH_MAX}
-        step={1}
-        value={resolved.width ?? layoutDefaults.fieldWidth}
-        schema={guestFieldSchema.shape.width.unwrap()}
-        onValueChange={(width) => updateField(field.id, { width })}
-      />
-      <ValidatedField
-        key={`space-above-${deviceMode}`}
-        label="Space above (px)"
-        type="number"
-        inputMode="numeric"
-        min={SPACE_ABOVE_MIN}
-        max={SPACE_ABOVE_MAX}
-        step={1}
-        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-        schema={guestFieldSchema.shape.spaceAbove.unwrap()}
-        onValueChange={(spaceAbove) => updateField(field.id, { spaceAbove })}
-      />
+      <LayoutSection>
+        <SliderField
+          label="Width"
+          unit="%"
+          value={resolved.width ?? layoutDefaults.fieldWidth}
+          min={ELEMENT_WIDTH_MIN}
+          max={ELEMENT_WIDTH_MAX}
+          onValueChange={(width) => updateField(field.id, { width })}
+        />
+        <SliderField
+          label="Space above"
+          unit="px"
+          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
+          min={SPACE_ABOVE_MIN}
+          max={SPACE_ABOVE_MAX}
+          onValueChange={(spaceAbove) => updateField(field.id, { spaceAbove })}
+        />
+      </LayoutSection>
       <Button
         variant="outline"
         size="sm"

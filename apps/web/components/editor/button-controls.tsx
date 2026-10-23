@@ -15,6 +15,8 @@ import {
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
+import { LayoutSection } from "./layout-section";
+import { SliderField } from "./slider-field";
 import { ValidatedField } from "./validated-field";
 
 export function ButtonControls({ button }: { button: ConnectButton }) {
@@ -43,41 +45,32 @@ export function ButtonControls({ button }: { button: ConnectButton }) {
         color={button.textColor}
         onChange={(textColor) => updateButton({ textColor })}
       />
-      <ValidatedField
-        label="Radius (px)"
-        type="number"
-        inputMode="numeric"
-        min={BUTTON_RADIUS_MIN}
-        max={BUTTON_RADIUS_MAX}
-        step={1}
-        value={button.borderRadius}
-        schema={buttonSchema.shape.borderRadius}
-        onValueChange={(borderRadius) => updateButton({ borderRadius })}
-      />
-      <ValidatedField
-        key={`width-${deviceMode}`}
-        label="Width (%)"
-        type="number"
-        inputMode="numeric"
-        min={ELEMENT_WIDTH_MIN}
-        max={ELEMENT_WIDTH_MAX}
-        step={1}
-        value={resolved.width}
-        schema={buttonSchema.shape.width}
-        onValueChange={(width) => updateButton({ width })}
-      />
-      <ValidatedField
-        key={`space-above-${deviceMode}`}
-        label="Space above (px)"
-        type="number"
-        inputMode="numeric"
-        min={SPACE_ABOVE_MIN}
-        max={SPACE_ABOVE_MAX}
-        step={1}
-        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-        schema={buttonSchema.shape.spaceAbove.unwrap()}
-        onValueChange={(spaceAbove) => updateButton({ spaceAbove })}
-      />
+      <LayoutSection>
+        <SliderField
+          label="Width"
+          unit="%"
+          value={resolved.width}
+          min={ELEMENT_WIDTH_MIN}
+          max={ELEMENT_WIDTH_MAX}
+          onValueChange={(width) => updateButton({ width })}
+        />
+        <SliderField
+          label="Corner radius"
+          unit="px"
+          value={button.borderRadius}
+          min={BUTTON_RADIUS_MIN}
+          max={BUTTON_RADIUS_MAX}
+          onValueChange={(borderRadius) => updateButton({ borderRadius })}
+        />
+        <SliderField
+          label="Space above"
+          unit="px"
+          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
+          min={SPACE_ABOVE_MIN}
+          max={SPACE_ABOVE_MAX}
+          onValueChange={(spaceAbove) => updateButton({ spaceAbove })}
+        />
+      </LayoutSection>
     </div>
   );
 }
