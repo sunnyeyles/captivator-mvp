@@ -1,8 +1,10 @@
-import { brandProfileSchema } from "@repo/portal";
+import { brandProfileSchema, IMAGE_MAX_BYTES } from "@repo/portal";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   IMPORT_BUDGET_MS,
   importBrand,
+  MAX_LOGO_ATTEMPTS,
+  MAX_OUTBOUND_REQUESTS,
   PAGE_MAX_BYTES,
   PAGE_TIMEOUT_MS,
 } from "./brand-import";
@@ -73,7 +75,15 @@ describe("importBrand name extraction", () => {
 
   it("prefers og:site_name over everything else", async () => {
     const { brand, deps } = await importPage(
-      page(title + manifestLink + jsonLd + applicationName + siteName),
+      page(
+        title +
+          manifestLink +
+          jsonLd +
+          applicationName +
+          siteName +
+          // With a name and a colour on the page, the manifest isn't needed
+          '<meta name="theme-color" content="#1d4ed8">',
+      ),
       manifest,
     );
 
@@ -230,7 +240,7 @@ describe("importBrand name extraction", () => {
     expect(brand.missing).toContain("name");
   });
 
-  it("lists everything this ticket doesn't fill as missing", async () => {
+  it("lists everything a bare page doesn't provide as missing", async () => {
     const { brand } = await importPage(page(title));
 
     expect(brand).toEqual({
@@ -238,6 +248,7 @@ describe("importBrand name extraction", () => {
       name: "Acme Title",
       logo: null,
       image: null,
+      imageRecommended: null,
       colors: [],
       primaryColor: null,
       missing: ["logo", "image", "colors"],
@@ -400,5 +411,442 @@ describe("importBrand requests", () => {
     );
 
     expect(deps.fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+const pngBytes = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d,
+]);
+const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]);
+const webpBytes = new Uint8Array([
+  0x52, 0x49, 0x46, 0x46, 4, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
+]);
+const svgText =
+  '<?xml version="1.0"?>\n<!-- logo --><svg xmlns="http://www.w3.org/2000/svg"></svg>';
+
+function imageResponse(body: Uint8Array | string, type: string) {
+  return () =>
+    new Response(typeof body === "string" ? body : body.slice(), {
+      headers: { "content-type": type },
+    });
+}
+
+function dataUrl(bytes: Uint8Array | string, type: string) {
+  return `data:${type};base64,${Buffer.from(bytes).toString("base64")}`;
+}
+
+const png = imageResponse(pngBytes, "image/png");
+const notFound = () => new Response("", { status: 404 });
+
+function fetchedUrls(deps: ReturnType<typeof fakeDeps>) {
+  return deps.fetch.mock.calls.map(([url]) => url);
+}
+
+describe("importBrand logo", () => {
+  const jsonLdLogo = `<script type="application/ld+json">${JSON.stringify({
+    "@type": "Organization",
+    name: "Acme",
+    logo: { "@type": "ImageObject", url: "/ld-logo.png" },
+  })}</script>`;
+  const imgLogo = '<img class="site-logo" src="/img-logo.png">';
+  const touchIcon = '<link rel="apple-touch-icon" href="/touch.png">';
+  const icons =
+    '<link rel="icon" href="/favicon.ico" sizes="512x512">' +
+    '<link rel="icon" type="image/png" href="/icon-16.png" sizes="16x16">' +
+    '<link rel="icon" href="/icon-192.png" sizes="192x192">';
+
+  it.each([
+    [
+      "the JSON-LD Organization logo",
+      jsonLdLogo + imgLogo + touchIcon + icons,
+      "/ld-logo.png",
+    ],
+    [
+      "an img whose class mentions the logo",
+      imgLogo + touchIcon + icons,
+      "/img-logo.png",
+    ],
+    ["the apple-touch-icon", touchIcon + icons, "/touch.png"],
+    ["the largest PNG or SVG icon", icons, "/icon-192.png"],
+  ])("prefers %s", async (_label, head, path) => {
+    const { brand, deps } = await importPage(
+      page(`<title>Acme</title>${head}`),
+      { [`https://acme.example${path}`]: png },
+    );
+
+    expect(brand.logo).toBe(dataUrl(pngBytes, "image/png"));
+    expect(fetchedUrls(deps)[1]).toBe(`https://acme.example${path}`);
+    expect(brand.missing).not.toContain("logo");
+  });
+
+  it.each([
+    ['<img alt="Acme logo" src="/a.png">', "/a.png"],
+    ['<img id="LogoMark" src="/b.png">', "/b.png"],
+    ['<img src="/brand/logo-dark.png">', "/brand/logo-dark.png"],
+  ])("finds the logo img in %s", async (img, path) => {
+    const { deps } = await importPage(
+      page("<title>Acme</title>", `<img src="/hero.png">${img}`),
+      { [`https://acme.example${path}`]: png },
+    );
+
+    expect(fetchedUrls(deps)[1]).toBe(`https://acme.example${path}`);
+  });
+
+  it("falls back to the largest manifest icon, resolved against the manifest", async () => {
+    const { brand, deps } = await importPage(
+      page('<link rel="manifest" href="/static/site.webmanifest">'),
+      {
+        "https://acme.example/static/site.webmanifest": () =>
+          jsonResponse({
+            icons: [
+              { src: "icon-48.png", sizes: "48x48" },
+              { src: "icon-512.png", sizes: "512x512" },
+            ],
+          }),
+        "https://acme.example/static/icon-512.png": png,
+      },
+    );
+
+    expect(fetchedUrls(deps)[2]).toBe(
+      "https://acme.example/static/icon-512.png",
+    );
+    expect(brand.logo).toBe(dataUrl(pngBytes, "image/png"));
+  });
+
+  it("resolves relative logos against the final page URL", async () => {
+    const deps = fakeDeps({
+      [SITE]: () =>
+        new Response(null, {
+          status: 301,
+          headers: { location: "https://www.acme.example/home/" },
+        }),
+      "https://www.acme.example/home/": () =>
+        htmlResponse(
+          page('<title>Acme</title><img class="logo" src="logo.png">'),
+        ),
+      "https://www.acme.example/home/logo.png": png,
+    });
+
+    const brand = await importBrand(SITE, deps);
+
+    expect(brand.logo).toBe(dataUrl(pngBytes, "image/png"));
+  });
+
+  it("tries at most two logo candidates", async () => {
+    const { brand, deps } = await importPage(
+      page(`<title>Acme</title>${jsonLdLogo}${imgLogo}${touchIcon}`),
+      {
+        "https://acme.example/ld-logo.png": notFound,
+        "https://acme.example/img-logo.png": notFound,
+        "https://acme.example/touch.png": png,
+      },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(1 + MAX_LOGO_ATTEMPTS);
+    expect(brand.logo).toBeNull();
+    expect(brand.missing).toContain("logo");
+  });
+
+  it("stops at the first logo that loads", async () => {
+    const { deps } = await importPage(
+      page(`<title>Acme</title>${imgLogo}${touchIcon}`),
+      { "https://acme.example/img-logo.png": png },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts an SVG logo", async () => {
+    const { brand } = await importPage(
+      page('<title>Acme</title><link rel="icon" href="/logo.svg" sizes="any">'),
+      {
+        "https://acme.example/logo.svg": imageResponse(
+          svgText,
+          "image/svg+xml",
+        ),
+      },
+    );
+
+    expect(brand.logo).toBe(dataUrl(svgText, "image/svg+xml"));
+  });
+
+  it.each([
+    [
+      "a header that disagrees with the bytes",
+      imageResponse(pngBytes, "image/jpeg"),
+    ],
+    ["HTML served as a PNG", imageResponse("<html></html>", "image/png")],
+    ["an unsupported type", imageResponse("GIF89a", "image/gif")],
+    [
+      "a body over the size limit",
+      imageResponse(
+        new Uint8Array(IMAGE_MAX_BYTES + 1)
+          .fill(0)
+          .map((byte, index) =>
+            index < pngBytes.length ? pngBytes[index]! : byte,
+          ),
+        "image/png",
+      ),
+    ],
+  ])("rejects %s and tries the next candidate", async (_label, respond) => {
+    const { brand, deps } = await importPage(
+      page(`<title>Acme</title>${imgLogo}${touchIcon}`),
+      {
+        "https://acme.example/img-logo.png": respond,
+        "https://acme.example/touch.png": png,
+      },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(3);
+    expect(brand.logo).toBe(dataUrl(pngBytes, "image/png"));
+  });
+
+  it("skips logos that aren't web addresses", async () => {
+    const { deps } = await importPage(
+      page(
+        '<title>Acme</title><img class="logo" src="data:image/png;base64,AAAA">',
+      ),
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a logo on a private address", async () => {
+    const { brand, deps } = await importPage(
+      page(
+        '<title>Acme</title><img class="logo" src="http://169.254.169.254/logo.png">',
+      ),
+    );
+
+    expect(brand.missing).toContain("logo");
+    expect(deps.fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("importBrand image", () => {
+  const og = '<meta property="og:image" content="/og.jpg">';
+  const twitter =
+    '<meta name="twitter:image" content="https://cdn.example/tw.webp">';
+
+  it("prefers og:image", async () => {
+    const { brand } = await importPage(
+      page(`<title>Acme</title>${twitter}${og}`),
+      {
+        "https://acme.example/og.jpg": imageResponse(jpegBytes, "image/jpeg"),
+        "https://cdn.example/tw.webp": imageResponse(webpBytes, "image/webp"),
+      },
+    );
+
+    expect(brand.image).toBe(dataUrl(jpegBytes, "image/jpeg"));
+    expect(brand.missing).not.toContain("image");
+  });
+
+  it("falls back to twitter:image", async () => {
+    const { brand } = await importPage(page(`<title>Acme</title>${twitter}`), {
+      "https://cdn.example/tw.webp": imageResponse(webpBytes, "image/webp"),
+    });
+
+    expect(brand.image).toBe(dataUrl(webpBytes, "image/webp"));
+  });
+
+  it("tries only one image", async () => {
+    const { brand, deps } = await importPage(
+      page(`<title>Acme</title>${og}${twitter}`),
+      {
+        "https://acme.example/og.jpg": notFound,
+        "https://cdn.example/tw.webp": imageResponse(webpBytes, "image/webp"),
+      },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+    expect(brand.image).toBeNull();
+    expect(brand.missing).toContain("image");
+  });
+
+  it("refuses an SVG image", async () => {
+    const { brand } = await importPage(
+      page('<title>Acme</title><meta property="og:image" content="/og.svg">'),
+      {
+        "https://acme.example/og.svg": imageResponse(svgText, "image/svg+xml"),
+      },
+    );
+
+    expect(brand.image).toBeNull();
+  });
+
+  it("leaves the image's positions for the browser to work out", async () => {
+    const { brand } = await importPage(page(`<title>Acme</title>${og}`), {
+      "https://acme.example/og.jpg": imageResponse(jpegBytes, "image/jpeg"),
+    });
+
+    expect(brand.imageRecommended).toBeNull();
+  });
+});
+
+describe("importBrand colours", () => {
+  it("collects candidates in order, normalised and without duplicates", async () => {
+    const { brand } = await importPage(
+      page(
+        '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F172A">' +
+          '<meta name="theme-color" content="#1D4ED8FF">' +
+          '<meta name="theme-color" media="(prefers-color-scheme: light)" content=" #abc ">' +
+          '<meta name="msapplication-TileColor" content="#00ABA9">' +
+          '<link rel="mask-icon" href="/mask.svg" color="#5bbad5">' +
+          '<link rel="manifest" href="/site.webmanifest">',
+      ),
+      {
+        "https://acme.example/site.webmanifest": () =>
+          jsonResponse({
+            name: "Acme",
+            theme_color: "#1d4ed8",
+            background_color: "#F00",
+          }),
+      },
+    );
+
+    expect(brand.colors).toEqual([
+      "#aabbcc",
+      "#1d4ed8",
+      "#0f172a",
+      "#ff0000",
+      "#00aba9",
+      "#5bbad5",
+    ]);
+    expect(brand.missing).not.toContain("colors");
+  });
+
+  it.each(["red", "rgb(29, 78, 216)", "#12345", "hsl(0 0% 0%)"])(
+    "skips the non-hex colour %j",
+    async (color) => {
+      const { brand } = await importPage(
+        page(`<title>Acme</title><meta name="theme-color" content="${color}">`),
+      );
+
+      expect(brand.colors).toEqual([]);
+      expect(brand.missing).toContain("colors");
+    },
+  );
+
+  it("keeps at most six colours", async () => {
+    const metas = [1, 2, 3, 4, 5, 6, 7]
+      .map(
+        (digit) => `<meta name="theme-color" content="#${digit}${digit}0000">`,
+      )
+      .join("");
+
+    const { brand } = await importPage(page(`<title>Acme</title>${metas}`));
+
+    expect(brand.colors).toHaveLength(6);
+  });
+
+  it("builds from the first colour that isn't near-white or near-black", async () => {
+    const { brand } = await importPage(
+      page(
+        '<title>Acme</title><meta name="theme-color" content="#ffffff">' +
+          '<meta name="msapplication-TileColor" content="#0a0a0a">' +
+          '<link rel="mask-icon" color="#e11d48">',
+      ),
+    );
+
+    expect(brand.colors).toEqual(["#ffffff", "#0a0a0a", "#e11d48"]);
+    expect(brand.primaryColor).toBe("#e11d48");
+  });
+
+  it("builds from a dark brand colour such as navy", async () => {
+    const { brand } = await importPage(
+      page('<title>Acme</title><meta name="theme-color" content="#052962">'),
+    );
+
+    expect(brand.primaryColor).toBe("#052962");
+  });
+
+  it("has no primary colour when every candidate is near-white or near-black", async () => {
+    const { brand } = await importPage(
+      page(
+        '<title>Acme</title><meta name="theme-color" content="#f8fafc">' +
+          '<meta name="msapplication-TileColor" content="#111111">',
+      ),
+    );
+
+    expect(brand.primaryColor).toBeNull();
+    expect(brand.missing).not.toContain("colors");
+  });
+
+  it("fetches the manifest for colours the page doesn't declare", async () => {
+    const { brand, deps } = await importPage(
+      page('<title>Acme</title><link rel="manifest" href="/m.json">'),
+      {
+        "https://acme.example/m.json": () =>
+          jsonResponse({ theme_color: "#e11d48" }),
+      },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+    expect(brand.primaryColor).toBe("#e11d48");
+  });
+
+  it("skips the manifest when the page has a name and colours", async () => {
+    const { deps } = await importPage(
+      page(
+        '<meta property="og:site_name" content="Acme">' +
+          '<link rel="mask-icon" color="#e11d48"><link rel="manifest" href="/m.json">',
+      ),
+      { "https://acme.example/m.json": () => jsonResponse({}) },
+    );
+
+    expect(deps.fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("importBrand full profile and request limit", () => {
+  const fullPage = page(
+    '<link rel="manifest" href="/m.json">' +
+      '<meta property="og:image" content="/og.jpg">' +
+      '<link rel="apple-touch-icon" href="/touch.png">' +
+      '<link rel="icon" href="/icon.svg" sizes="any">',
+    '<img class="logo" src="/logo.png">',
+  );
+
+  it("returns every detail a fully branded site provides", async () => {
+    const { brand, deps } = await importPage(fullPage, {
+      "https://acme.example/m.json": () =>
+        jsonResponse({ name: "Acme Coffee", theme_color: "#1d4ed8" }),
+      "https://acme.example/logo.png": notFound,
+      "https://acme.example/touch.png": png,
+      "https://acme.example/og.jpg": imageResponse(jpegBytes, "image/jpeg"),
+    });
+
+    expect(brand).toEqual({
+      sourceUrl: SITE,
+      name: "Acme Coffee",
+      logo: dataUrl(pngBytes, "image/png"),
+      image: dataUrl(jpegBytes, "image/jpeg"),
+      imageRecommended: null,
+      colors: ["#1d4ed8"],
+      primaryColor: "#1d4ed8",
+      missing: [],
+    });
+    expect(brandProfileSchema.safeParse(brand).error).toBeUndefined();
+    expect(deps.fetch).toHaveBeenCalledTimes(MAX_OUTBOUND_REQUESTS);
+  });
+
+  it(`never makes more than ${MAX_OUTBOUND_REQUESTS} outbound requests, counting redirects`, async () => {
+    const loop = (to: string) => () =>
+      new Response(null, { status: 302, headers: { location: to } });
+    const { brand, deps } = await importPage(fullPage, {
+      "https://acme.example/m.json": loop("/m2.json"),
+      "https://acme.example/m2.json": loop("/m.json"),
+      "https://acme.example/logo.png": loop("/logo2.png"),
+      "https://acme.example/logo2.png": loop("/logo.png"),
+      "https://acme.example/touch.png": loop("/touch2.png"),
+      "https://acme.example/touch2.png": loop("/touch.png"),
+      "https://acme.example/og.jpg": loop("/og2.jpg"),
+      "https://acme.example/og2.jpg": loop("/og.jpg"),
+    });
+
+    expect(deps.fetch.mock.calls.length).toBeLessThanOrEqual(
+      MAX_OUTBOUND_REQUESTS,
+    );
+    expect(brand.missing).toEqual(["name", "logo", "image", "colors"]);
   });
 });

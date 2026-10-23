@@ -8,7 +8,7 @@ import {
   type BrandProfile,
   type Device,
 } from "@repo/portal";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { frameSizes } from "@/components/preview/design-canvas";
 import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
+import { ColorField } from "./color-field";
 import { DeviceToggle } from "./device-mode-switcher";
 
 const PREVIEW_BOX = { width: 240, height: 280 };
@@ -98,6 +99,50 @@ function DesignPreview({
   );
 }
 
+function BrandColorRow({ brand }: { brand: BrandProfile }) {
+  const setBrandDraftColor = usePortalEditorStore(
+    (state) => state.setBrandDraftColor,
+  );
+  const groupId = useId();
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,16rem)] sm:items-end sm:gap-4">
+      {brand.colors.length > 0 ? (
+        <div className="grid gap-2">
+          <p id={groupId} className="text-sm font-medium">
+            Colours from your site
+          </p>
+          <div
+            role="group"
+            aria-labelledby={groupId}
+            className="flex flex-wrap gap-2"
+          >
+            {brand.colors.map((color) => (
+              <Button
+                key={color}
+                variant="outline"
+                size="icon"
+                aria-pressed={color === brand.primaryColor}
+                aria-label={color}
+                title={color}
+                className="aria-pressed:ring-2 aria-pressed:ring-ring aria-pressed:ring-offset-2 aria-pressed:ring-offset-background"
+                // The swatch shows the customer's colour, which is content rather than editor styling
+                style={{ backgroundColor: color }}
+                onClick={() => setBrandDraftColor(color)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <ColorField
+        label="Brand colour"
+        color={brand.primaryColor ?? ""}
+        onChange={setBrandDraftColor}
+      />
+    </div>
+  );
+}
+
 interface BrandDesignChooserProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -132,6 +177,7 @@ export function BrandDesignChooser({
           value={device}
           onValueChange={setDevice}
         />
+        <BrandColorRow brand={brand} />
         <MissingDetailsNote missing={brand.missing} />
         {atTemplateDefaults ? null : (
           <p className="rounded-md border bg-muted px-3 py-2 text-sm">

@@ -1,6 +1,11 @@
 "use client";
 
-import { SplashPage, templateIds, templates } from "@repo/portal";
+import {
+  brandedConfig,
+  SplashPage,
+  templateIds,
+  templates,
+} from "@repo/portal";
 import { Button } from "@/components/ui/button";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
@@ -10,6 +15,7 @@ const THUMBNAIL_SCALE = THUMBNAIL_WIDTH / MOBILE_FRAME.width;
 
 export function TemplateGallery() {
   const templateId = usePortalEditorStore((state) => state.templateId);
+  const brand = usePortalEditorStore((state) => state.brand);
   const setTemplate = usePortalEditorStore((state) => state.setTemplate);
 
   return (
@@ -37,7 +43,7 @@ export function TemplateGallery() {
                 }}
               >
                 <SplashPage
-                  config={template.config}
+                  config={brandedConfig(id, brand)}
                   device="mobile"
                   mode="published"
                 />

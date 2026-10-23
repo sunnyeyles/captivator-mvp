@@ -81,5 +81,7 @@ export {
   brandDetails,
   brandedConfig,
   brandProfileSchema,
+  MIN_TEXT_CONTRAST,
   type BrandProfile,
 } from "./brand";
+export { contrastRatio } from "./renderer/contrast";
