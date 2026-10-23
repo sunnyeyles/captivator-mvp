@@ -3,7 +3,11 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@repo/ui": ["./src"],
+      "@repo/ui/*": ["./src/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules"]
