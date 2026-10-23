@@ -1,5 +1,6 @@
 import type {
   BackgroundImage,
+  BackgroundPosition,
   GuestFieldType,
   PortalConfig,
   TextElement,
@@ -68,10 +69,17 @@ export const defaultPortalConfig: PortalConfig = {
   },
 };
 
-/** The settings a newly uploaded background image starts with. */
-export const defaultBackgroundImageSettings: Omit<BackgroundImage, "src"> = {
+/** The background image position that shows the middle of the image. */
+export const centeredBackgroundPosition: BackgroundPosition = { x: 50, y: 50 };
+
+/** The settings a newly placed background image starts with. */
+export const defaultBackgroundImageSettings: Omit<
+  BackgroundImage,
+  "src" | "overrides"
+> = {
   fit: "cover",
-  position: "center",
+  position: centeredBackgroundPosition,
+  recommended: null,
   overlay: null,
 };
 

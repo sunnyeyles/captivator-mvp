@@ -3,6 +3,7 @@ import {
   defaultPortalConfig,
   defaultTextStyle,
   LOGO_ELEMENT_ID,
+  resolveBackgroundImage,
   templates,
 } from "@repo/portal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -575,7 +576,10 @@ describe("no-op edits", () => {
     ["updateButton", () => getState().updateButton({})],
     ["updateBackground", () => getState().updateBackground({ type: "color" })],
     ["updateBranding", () => getState().updateBranding({})],
-    ["setTemplate to the current template", () => getState().setTemplate("minimal")],
+    [
+      "setTemplate to the current template",
+      () => getState().setTemplate("minimal"),
+    ],
   ])("%s leaves the config and history untouched", (_name, edit) => {
     const { config } = getState();
     edit();
@@ -967,5 +971,240 @@ describe("layout overrides on fields, the button and the logo", () => {
     expect(getState().config.texts[0]!.overrides).toEqual({
       mobile: { fontSize: 40 },
     });
+  });
+});
+
+describe("background positions", () => {
+  const recommended = {
+    desktop: { x: 30, y: 40 },
+    tablet: { x: 50, y: 60 },
+    mobile: { x: 70, y: 80 },
+  };
+  const image = () => getState().config.background.image!;
+  const positionOn = (device: "desktop" | "tablet" | "mobile") =>
+    resolveBackgroundImage(image(), device).position;
+
+  function placeImage() {
+    getState().updateBackground({ type: "image" });
+    getState().placeBackgroundImage("blob:http://localhost/bg-1", recommended);
+    pause();
+  }
+
+  it("places an image with its recommendation in one undo step", () => {
+    getState().updateBackground({ type: "image" });
+    pause();
+    const before = getState().config;
+    getState().placeBackgroundImage("blob:http://localhost/bg-1", recommended);
+
+    expect(image()).toEqual({
+      ...defaultBackgroundImageSettings,
+      src: "blob:http://localhost/bg-1",
+      recommended,
+    });
+
+    getState().undo();
+    expect(getState().config).toBe(before);
+  });
+
+  it("keeps fit and overlay and drops old adjustments when replacing", () => {
+    placeImage();
+    getState().updateBackground({
+      image: {
+        ...image(),
+        fit: "contain",
+        overlay: { color: "#ff0000", opacity: 0.5 },
+      },
+    });
+    getState().overrideBackgroundPosition("mobile", { x: 1, y: 2 });
+    pause();
+    getState().placeBackgroundImage("blob:http://localhost/bg-2", null);
+
+    expect(image()).toEqual({
+      src: "blob:http://localhost/bg-2",
+      fit: "contain",
+      position: { x: 50, y: 50 },
+      recommended: null,
+      overlay: { color: "#ff0000", opacity: 0.5 },
+    });
+  });
+
+  it("starts the Event template's replacement image centred", () => {
+    getState().setTemplate("event");
+    getState().placeBackgroundImage("blob:http://localhost/bg-1", null);
+
+    expect(image()).toMatchObject({
+      fit: "cover",
+      position: { x: 50, y: 50 },
+      recommended: null,
+      overlay: templates.event.config.background.image!.overlay,
+    });
+  });
+
+  it("overrides one device and leaves the others alone", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("mobile", { x: 12.5, y: 0 });
+
+    expect(positionOn("mobile")).toEqual({ x: 12.5, y: 0 });
+    expect(positionOn("desktop")).toEqual(recommended.desktop);
+    expect(positionOn("tablet")).toEqual(recommended.tablet);
+  });
+
+  it("rejects an invalid position", () => {
+    placeImage();
+    const before = getState().config;
+    getState().overrideBackgroundPosition("mobile", { x: 120, y: 50 });
+    getState().overrideBackgroundPosition("mobile", { x: Number.NaN, y: 50 });
+
+    expect(getState().config).toBe(before);
+  });
+
+  it("ignores a position override without an image", () => {
+    const before = getState().config;
+    getState().overrideBackgroundPosition("desktop", { x: 10, y: 10 });
+
+    expect(getState().config).toBe(before);
+  });
+
+  it("merges a drag into one undo step", () => {
+    placeImage();
+    const before = getState().config;
+    for (let x = 49; x > 40; x -= 1) {
+      getState().overrideBackgroundPosition("desktop", { x, y: 50 });
+      vi.advanceTimersByTime(16);
+    }
+
+    expect(positionOn("desktop")).toEqual({ x: 41, y: 50 });
+    getState().undo();
+    expect(getState().config).toBe(before);
+  });
+
+  it("starts a new undo step on another device", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("desktop", { x: 10, y: 50 });
+    getState().overrideBackgroundPosition("mobile", { x: 20, y: 50 });
+    getState().undo();
+
+    expect(positionOn("desktop")).toEqual({ x: 10, y: 50 });
+    expect(positionOn("mobile")).toEqual(recommended.mobile);
+  });
+
+  it("resets a device to its recommendation", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("tablet", { x: 1, y: 1 });
+    getState().overrideBackgroundPosition("mobile", { x: 2, y: 2 });
+    pause();
+    getState().clearBackgroundPositionOverride("tablet");
+
+    expect(positionOn("tablet")).toEqual(recommended.tablet);
+    expect(positionOn("mobile")).toEqual({ x: 2, y: 2 });
+  });
+
+  it("resets to the shared position without a recommendation", () => {
+    getState().updateBackground({ type: "image" });
+    getState().placeBackgroundImage("blob:http://localhost/bg-1", null);
+    getState().overrideBackgroundPosition("desktop", { x: 1, y: 1 });
+    pause();
+    getState().clearBackgroundPositionOverride("desktop");
+
+    expect(positionOn("desktop")).toEqual({ x: 50, y: 50 });
+    expect(image().overrides).toBeUndefined();
+  });
+
+  it("keeps every device's position when switching device", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("mobile", { x: 3, y: 4 });
+    const { config } = getState();
+    getState().setDeviceMode("mobile");
+    getState().setDeviceMode("tablet");
+
+    expect(getState().config).toBe(config);
+    expect(positionOn("mobile")).toEqual({ x: 3, y: 4 });
+  });
+
+  it("restores positions exactly on undo and redo", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("mobile", { x: 3.7, y: 4.2 });
+    getState().undo();
+    expect(positionOn("mobile")).toEqual(recommended.mobile);
+
+    getState().redo();
+    expect(positionOn("mobile")).toEqual({ x: 3.7, y: 4.2 });
+  });
+
+  it("replaces positions with the template's on a template switch and reset", () => {
+    placeImage();
+    getState().overrideBackgroundPosition("mobile", { x: 3, y: 4 });
+    getState().setTemplate("event");
+    expect(getState().config).toEqual(templates.event.config);
+
+    getState().overrideBackgroundPosition("mobile", { x: 3, y: 4 });
+    getState().reset();
+    expect(getState().config).toEqual(templates.event.config);
+  });
+});
+
+describe("repositioning", () => {
+  function placeImage() {
+    getState().updateBackground({ type: "image" });
+    getState().placeBackgroundImage("blob:http://localhost/bg-1", null);
+  }
+
+  it("is editor state outside history", () => {
+    placeImage();
+    const { past } = getState();
+    getState().setRepositioning(true);
+
+    expect(getState().repositioning).toBe(true);
+    expect(getState().past).toBe(past);
+  });
+
+  it("clears the selection when entering", () => {
+    placeImage();
+    getState().selectElement("welcome-heading");
+    getState().setRepositioning(true);
+
+    expect(getState().selectedElementId).toBeNull();
+  });
+
+  it("leaves on Done", () => {
+    placeImage();
+    getState().setRepositioning(true);
+    getState().setRepositioning(false);
+
+    expect(getState().repositioning).toBe(false);
+  });
+
+  it("leaves when switching to preview", () => {
+    placeImage();
+    getState().setRepositioning(true);
+    getState().setCanvasMode("preview");
+
+    expect(getState().repositioning).toBe(false);
+  });
+
+  it("leaves when the image is removed", () => {
+    placeImage();
+    getState().setRepositioning(true);
+    getState().updateBackground({ image: null });
+
+    expect(getState().repositioning).toBe(false);
+  });
+
+  it("leaves when the background switches to colour", () => {
+    placeImage();
+    getState().setRepositioning(true);
+    getState().updateBackground({ type: "color" });
+
+    expect(getState().repositioning).toBe(false);
+  });
+
+  it("stays on through device switches and other background edits", () => {
+    placeImage();
+    getState().setRepositioning(true);
+    getState().setDeviceMode("mobile");
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().overrideBackgroundPosition("mobile", { x: 1, y: 1 });
+
+    expect(getState().repositioning).toBe(true);
   });
 });

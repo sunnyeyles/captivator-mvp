@@ -1,9 +1,11 @@
 import {
+  backgroundImageSchema,
   backgroundSchema,
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
   CONNECT_BUTTON_ID,
+  defaultBackgroundImageSettings,
   defaultTextStyle,
   guestFieldTypes,
   LOGO_ELEMENT_ID,
@@ -12,6 +14,9 @@ import {
   setDeviceOverride,
   templates,
   textElementSchema,
+  type BackgroundImage,
+  type BackgroundPosition,
+  type BackgroundPositionRecommendation,
   type ConnectButton,
   type Device,
   type GuestField,
@@ -40,6 +45,7 @@ export interface PortalEditorState extends HistoryEntry {
   deviceMode: Device;
   canvasMode: CanvasMode;
   selectedElementId: string | null;
+  repositioning: boolean;
 }
 
 interface PortalEditorActions {
@@ -90,6 +96,16 @@ interface PortalEditorActions {
   ) => void;
   overrideLogo: (device: Device, changes: StyleOverride<Logo>) => void;
   clearLogoOverride: (device: Device, key: keyof StyleOverride<Logo>) => void;
+  placeBackgroundImage: (
+    src: string,
+    recommended: BackgroundPositionRecommendation | null,
+  ) => void;
+  overrideBackgroundPosition: (
+    device: Device,
+    position: BackgroundPosition,
+  ) => void;
+  clearBackgroundPositionOverride: (device: Device) => void;
+  setRepositioning: (on: boolean) => void;
 }
 
 export type PortalEditorStore = PortalEditorState & PortalEditorActions;
@@ -104,7 +120,11 @@ export const initialEditorState: PortalEditorState = {
   deviceMode: "desktop",
   canvasMode: "edit",
   selectedElementId: null,
+  repositioning: false,
 };
+
+// Gesture id for background position overrides, which have no selectable element
+const BACKGROUND_IMAGE_ID = "background-image";
 
 function nextId(prefix: string, items: { id: string }[]) {
   const taken = new Set(items.map((item) => item.id));
@@ -173,6 +193,22 @@ function replaceLogo(
     config: {
       ...state.config,
       branding: { ...state.config.branding, logo: parsed.data },
+    },
+  };
+}
+
+function replaceBackgroundImage(
+  state: PortalEditorState,
+  edit: (current: BackgroundImage) => unknown,
+): Partial<PortalEditorState> {
+  const { image } = state.config.background;
+  if (!image) return state;
+  const parsed = backgroundImageSchema.safeParse(edit(image));
+  if (!parsed.success) return state;
+  return {
+    config: {
+      ...state.config,
+      background: { ...state.config.background, image: parsed.data },
     },
   };
 }
@@ -331,8 +367,16 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     setCanvasMode: (canvasMode) =>
       set(
         canvasMode === "preview"
-          ? { canvasMode, selectedElementId: null }
+          ? { canvasMode, selectedElementId: null, repositioning: false }
           : { canvasMode },
+      ),
+
+    // Repositioning captures canvas clicks, so a selection would only be stale while it lasts
+    setRepositioning: (repositioning) =>
+      set(
+        repositioning
+          ? { repositioning, selectedElementId: null }
+          : { repositioning },
       ),
 
     selectElement: (selectedElementId) => set({ selectedElementId }),
@@ -346,7 +390,12 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
           });
           // The renderer trusts the config, so invalid edits never reach it
           if (!parsed.success) return state;
-          return { config: { ...state.config, background: parsed.data } };
+          const imageShown =
+            parsed.data.type === "image" && parsed.data.image !== null;
+          return {
+            config: { ...state.config, background: parsed.data },
+            repositioning: state.repositioning && imageShown,
+          };
         },
         gestureKey(
           "background",
@@ -522,6 +571,41 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
       set((state) =>
         replaceLogo(state, (current) =>
           clearDeviceOverride(current, device, key),
+        ),
+      ),
+
+    // Adjustments made for the previous image would misplace the new one, so only fit and overlay carry over
+    placeBackgroundImage: (src, recommended) =>
+      set((state) => {
+        const { background } = state.config;
+        const previous = background.image ?? defaultBackgroundImageSettings;
+        const parsed = backgroundSchema.safeParse({
+          ...background,
+          image: {
+            ...defaultBackgroundImageSettings,
+            fit: previous.fit,
+            overlay: previous.overlay,
+            src,
+            recommended,
+          },
+        });
+        if (!parsed.success) return state;
+        return { config: { ...state.config, background: parsed.data } };
+      }),
+
+    overrideBackgroundPosition: (device, position) =>
+      set(
+        (state) =>
+          replaceBackgroundImage(state, (current) =>
+            setDeviceOverride(current, device, { position }),
+          ),
+        gestureKey(`override-${device}`, ["position"], BACKGROUND_IMAGE_ID),
+      ),
+
+    clearBackgroundPositionOverride: (device) =>
+      set((state) =>
+        replaceBackgroundImage(state, (current) =>
+          clearDeviceOverride(current, device, "position"),
         ),
       ),
   };

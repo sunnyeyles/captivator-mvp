@@ -48,6 +48,8 @@ describe("templates", () => {
     expect(background.type).toBe("image");
     expect(background.image?.src).toMatch(/^data:image\/svg\+xml,/);
     expect(background.image?.overlay).not.toBeNull();
+    expect(background.image?.position).toEqual({ x: 50, y: 50 });
+    expect(background.image?.recommended).toBeNull();
   });
 
   it("uses no remote or object URLs for template images", () => {

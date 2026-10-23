@@ -22,7 +22,8 @@ describe("guestLabelStyle", () => {
   const image = {
     src: "blob:http://localhost/background",
     fit: "cover",
-    position: "center",
+    position: { x: 50, y: 50 },
+    recommended: null,
     overlay: null,
   } as const;
 
@@ -46,9 +47,9 @@ describe("guestLabelStyle", () => {
   });
 
   it("ignores a kept image while in colour mode", () => {
-    expect(
-      guestLabelStyle({ type: "color", color: "#ffffff", image }),
-    ).toEqual({ color: "#1c1917" });
+    expect(guestLabelStyle({ type: "color", color: "#ffffff", image })).toEqual(
+      { color: "#1c1917" },
+    );
   });
 
   it("follows a strong overlay over an image", () => {
@@ -63,13 +64,10 @@ describe("guestLabelStyle", () => {
   it.each([
     ["no overlay", null],
     ["a faint overlay", { color: "#ffffff", opacity: 0.2 }],
-  ])(
-    "uses shadowed light labels on an image with %s",
-    (_name, overlay) => {
-      const style = guestLabelStyle(imageBackground(overlay));
+  ])("uses shadowed light labels on an image with %s", (_name, overlay) => {
+    const style = guestLabelStyle(imageBackground(overlay));
 
-      expect(style.color).toBe("#ffffff");
-      expect(style.textShadow).toBeTruthy();
-    },
-  );
+    expect(style.color).toBe("#ffffff");
+    expect(style.textShadow).toBeTruthy();
+  });
 });

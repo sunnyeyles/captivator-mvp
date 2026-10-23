@@ -5,7 +5,10 @@ import { Monitor, RotateCcw, Smartphone, Tablet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
-const devices: Record<Device, { name: string; icon: typeof Monitor }> = {
+export const deviceDetails: Record<
+  Device,
+  { name: string; icon: typeof Monitor }
+> = {
   desktop: { name: "desktop", icon: Monitor },
   tablet: { name: "tablet", icon: Tablet },
   mobile: { name: "mobile", icon: Smartphone },
@@ -29,7 +32,7 @@ export function DeviceOverrideField({
   onClear,
   children,
 }: DeviceOverrideFieldProps) {
-  const { name, icon: Icon } = devices[device];
+  const { name, icon: Icon } = deviceDetails[device];
 
   return (
     <div
