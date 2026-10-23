@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@repo/ui/select";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
 export function TemplatePicker() {

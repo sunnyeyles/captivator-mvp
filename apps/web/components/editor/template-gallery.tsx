@@ -7,7 +7,7 @@ import {
   type BrandProfile,
   type TemplateId,
 } from "@repo/portal";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { PortalThumbnail } from "@/components/preview/portal-thumbnail";
 import { usePortalEditorStore } from "@/lib/editor-store";
 

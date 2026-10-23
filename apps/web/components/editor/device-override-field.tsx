@@ -3,7 +3,7 @@
 import type { Device } from "@repo/portal";
 import { Monitor, RotateCcw, Smartphone, Tablet } from "lucide-react";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 
 export const deviceDetails: Record<
   Device,

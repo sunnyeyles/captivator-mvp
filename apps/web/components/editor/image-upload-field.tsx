@@ -3,8 +3,8 @@
 import { imageTypes } from "@repo/portal";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { useId, useRef, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button } from "@repo/ui/button";
+import { Label } from "@repo/ui/label";
 import { imageFileError } from "@/lib/images";
 
 interface ImageUploadFieldProps {

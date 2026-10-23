@@ -9,14 +9,14 @@ import {
   type Device,
 } from "@repo/portal";
 import { memo, useDeferredValue, useId, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@repo/ui/dialog";
 import { deviceFrames } from "@/lib/device-frames";
 import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";

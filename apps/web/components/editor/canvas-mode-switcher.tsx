@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, Pencil } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore, type CanvasMode } from "@/lib/editor-store";
 
 function isCanvasMode(value: string): value is CanvasMode {

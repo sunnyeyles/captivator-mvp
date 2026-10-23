@@ -2,7 +2,7 @@
 
 import { devices, type Device } from "@repo/portal";
 import { Monitor, Smartphone, Tablet } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
 function isDevice(value: string): value is Device {

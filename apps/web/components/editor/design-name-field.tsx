@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useCurrentDesign } from "@/components/designs/design-loader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
 import { designRepository } from "@/lib/designs";
 
 export function DesignNameField() {

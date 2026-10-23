@@ -1,4 +1,4 @@
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@repo/ui/separator";
 import { ConnectButtonGroup } from "./connect-button-group";
 import { GuestFieldsGroup } from "./guest-fields-group";
 import { BackgroundControls } from "./background-controls";

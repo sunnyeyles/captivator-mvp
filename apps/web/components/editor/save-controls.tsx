@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { useCurrentDesign } from "@/components/designs/design-loader";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { designRepository } from "@/lib/designs";
 import { hasUnsavedChanges, usePortalEditorStore } from "@/lib/editor-store";
 import { PublishControls } from "./publish-controls";
