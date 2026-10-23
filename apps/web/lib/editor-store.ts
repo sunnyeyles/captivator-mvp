@@ -52,6 +52,8 @@ interface PortalEditorState extends HistoryEntry {
   repositioning: boolean;
   // The latest import while the customer is choosing a design, kept out of history because it never changes the design
   brandDraft: BrandProfile | null;
+  // The design before an agent reply started streaming, which the finished reply becomes one undo step on top of
+  generationBase: HistoryEntry | null;
 }
 
 interface PortalEditorActions {
@@ -89,6 +91,8 @@ interface PortalEditorActions {
   ) => void;
   clearBackgroundPositionOverride: (device: Device) => void;
   setRepositioning: (on: boolean) => void;
+  previewGeneratedConfig: (config: PortalConfig) => void;
+  finishGeneration: (config: PortalConfig | null) => void;
 }
 
 type PortalEditorStore = PortalEditorState & PortalEditorActions;
@@ -111,6 +115,7 @@ export const initialEditorState: PortalEditorState = {
   },
   repositioning: false,
   brandDraft: null,
+  generationBase: null,
 };
 
 // Gesture id for background position overrides, which have no selectable element
@@ -349,6 +354,7 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
         selectedElementId: null,
         repositioning: false,
         brandDraft: null,
+        generationBase: null,
         saved: { config, templateId, brand },
       }),
 
@@ -371,10 +377,11 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
 
     reset: () => set((state) => branded(state, state.templateId, state.brand)),
 
+    // History stays put while an agent reply streams, since the reply lands on top of it when it finishes
     undo: () =>
       setState((state) => {
         const previous = state.past.at(-1);
-        if (!previous) return state;
+        if (!previous || state.generationBase) return state;
         return {
           ...previous,
           past: state.past.slice(0, -1),
@@ -389,7 +396,7 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     redo: () =>
       setState((state) => {
         const [next, ...future] = state.future;
-        if (!next) return state;
+        if (!next || state.generationBase) return state;
         return {
           ...next,
           past: [...state.past, historyEntry(state)],
@@ -593,6 +600,35 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
           ),
         gestureKey(`override-${device}`, ["position"], BACKGROUND_IMAGE_ID),
       ),
+
+    // Streamed configs skip history, so the canvas can follow the reply without an undo step per chunk
+    previewGeneratedConfig: (config) =>
+      setState((state) => ({
+        config,
+        generationBase: state.generationBase ?? historyEntry(state),
+        selectedElementId: keptSelection(config, state.selectedElementId),
+      })),
+
+    // Null puts back the design from before the reply, as when the agent fails or is stopped
+    finishGeneration: (config) =>
+      setState((state) => {
+        // A reply short enough to finish before any preview has no base yet
+        const base = state.generationBase ?? historyEntry(state);
+        const final = config ?? base.config;
+        const done = {
+          config: final,
+          generationBase: null,
+          selectedElementId: keptSelection(final, state.selectedElementId),
+        };
+        if (isUnchanged(base, { config: final })) {
+          return { ...done, config: base.config };
+        }
+        return {
+          ...done,
+          past: [...state.past, base].slice(-HISTORY_LIMIT),
+          future: [],
+        };
+      }),
 
     clearBackgroundPositionOverride: (device) =>
       set((state) =>

@@ -18,6 +18,7 @@ export {
   fontWeights,
   GUEST_FIELD_LABEL_MAX,
   GUEST_FIELD_PLACEHOLDER_MAX,
+  guestFieldSchema,
   guestFieldTypes,
   IMAGE_MAX_BYTES,
   imageFileSchema,

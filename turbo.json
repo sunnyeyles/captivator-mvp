@@ -5,7 +5,8 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"],
+      "passThroughEnv": ["AI_GATEWAY_API_KEY", "AI_MODEL", "VERCEL_OIDC_TOKEN"]
     },
     "lint": {
       "dependsOn": ["transit"]
@@ -25,7 +26,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["AI_GATEWAY_API_KEY", "AI_MODEL", "VERCEL_OIDC_TOKEN"]
     }
   }
 }
