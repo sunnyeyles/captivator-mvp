@@ -5,8 +5,8 @@ import {
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
+  clearOverridesFor,
   colorSchema,
-  CONNECT_BUTTON_ID,
   defaultBackgroundImageSettings,
   defaultTextStyle,
   guestFieldTypes,
@@ -71,6 +71,7 @@ interface PortalEditorActions {
   updateBackground: (changes: Partial<PortalConfig["background"]>) => void;
   updateBranding: (changes: Partial<PortalConfig["branding"]>) => void;
   addText: () => void;
+  // Element edits apply on every device, so they clear the changed keys' device overrides
   updateText: (id: string, changes: Partial<Omit<TextElement, "id">>) => void;
   removeText: (id: string) => void;
   addField: () => void;
@@ -78,36 +79,7 @@ interface PortalEditorActions {
   removeField: (id: string) => void;
   moveField: (id: string, offset: -1 | 1) => void;
   updateButton: (changes: Partial<PortalConfig["button"]>) => void;
-  overrideText: (
-    id: string,
-    device: Device,
-    changes: StyleOverride<TextElement>,
-  ) => void;
-  clearTextOverride: (
-    id: string,
-    device: Device,
-    key: keyof StyleOverride<TextElement>,
-  ) => void;
-  overrideField: (
-    id: string,
-    device: Device,
-    changes: StyleOverride<GuestField>,
-  ) => void;
-  clearFieldOverride: (
-    id: string,
-    device: Device,
-    key: keyof StyleOverride<GuestField>,
-  ) => void;
-  overrideButton: (
-    device: Device,
-    changes: StyleOverride<ConnectButton>,
-  ) => void;
-  clearButtonOverride: (
-    device: Device,
-    key: keyof StyleOverride<ConnectButton>,
-  ) => void;
-  overrideLogo: (device: Device, changes: StyleOverride<Logo>) => void;
-  clearLogoOverride: (device: Device, key: keyof StyleOverride<Logo>) => void;
+  updateLogo: (changes: StyleOverride<Logo>) => void;
   placeBackgroundImage: (
     src: string,
     recommended: BackgroundPositionRecommendation | null,
@@ -520,7 +492,12 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     updateText: (id, changes) =>
       set(
         (state) =>
-          replaceText(state, id, (current) => ({ ...current, ...changes, id })),
+          replaceText(state, id, (current) =>
+            clearOverridesFor(
+              { ...current, ...changes, id },
+              Object.keys(changes),
+            ),
+          ),
         gestureKey("text", Object.keys(changes), id),
       ),
 
@@ -533,22 +510,6 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
         selectedElementId:
           state.selectedElementId === id ? null : state.selectedElementId,
       })),
-
-    overrideText: (id, device, changes) =>
-      set(
-        (state) =>
-          replaceText(state, id, (current) =>
-            setDeviceOverride(current, device, changes),
-          ),
-        gestureKey(`override-${device}`, Object.keys(changes), id),
-      ),
-
-    clearTextOverride: (id, device, key) =>
-      set((state) =>
-        replaceText(state, id, (current) =>
-          clearDeviceOverride(current, device, key),
-        ),
-      ),
 
     addField: () =>
       set((state) => {
@@ -566,28 +527,13 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     updateField: (id, changes) =>
       set(
         (state) =>
-          replaceField(state, id, (current) => ({
-            ...current,
-            ...changes,
-            id,
-          })),
-        gestureKey("field", Object.keys(changes), id),
-      ),
-
-    overrideField: (id, device, changes) =>
-      set(
-        (state) =>
           replaceField(state, id, (current) =>
-            setDeviceOverride(current, device, changes),
+            clearOverridesFor(
+              { ...current, ...changes, id },
+              Object.keys(changes),
+            ),
           ),
-        gestureKey(`override-${device}`, Object.keys(changes), id),
-      ),
-
-    clearFieldOverride: (id, device, key) =>
-      set((state) =>
-        replaceField(state, id, (current) =>
-          clearDeviceOverride(current, device, key),
-        ),
+        gestureKey("field", Object.keys(changes), id),
       ),
 
     removeField: (id) =>
@@ -614,44 +560,19 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     updateButton: (changes) =>
       set(
         (state) =>
-          replaceButton(state, (current) => ({ ...current, ...changes })),
+          replaceButton(state, (current) =>
+            clearOverridesFor({ ...current, ...changes }, Object.keys(changes)),
+          ),
         gestureKey("button", Object.keys(changes)),
       ),
 
-    overrideButton: (device, changes) =>
-      set(
-        (state) =>
-          replaceButton(state, (current) =>
-            setDeviceOverride(current, device, changes),
-          ),
-        gestureKey(
-          `override-${device}`,
-          Object.keys(changes),
-          CONNECT_BUTTON_ID,
-        ),
-      ),
-
-    clearButtonOverride: (device, key) =>
-      set((state) =>
-        replaceButton(state, (current) =>
-          clearDeviceOverride(current, device, key),
-        ),
-      ),
-
-    overrideLogo: (device, changes) =>
+    updateLogo: (changes) =>
       set(
         (state) =>
           replaceLogo(state, (current) =>
-            setDeviceOverride(current, device, changes),
+            clearOverridesFor({ ...current, ...changes }, Object.keys(changes)),
           ),
-        gestureKey(`override-${device}`, Object.keys(changes), LOGO_ELEMENT_ID),
-      ),
-
-    clearLogoOverride: (device, key) =>
-      set((state) =>
-        replaceLogo(state, (current) =>
-          clearDeviceOverride(current, device, key),
-        ),
+        gestureKey("logo", Object.keys(changes), LOGO_ELEMENT_ID),
       ),
 
     // Adjustments made for the previous image would misplace the new one, so only fit and overlay carry over

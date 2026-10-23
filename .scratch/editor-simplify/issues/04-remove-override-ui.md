@@ -4,8 +4,8 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `clearOverridesFor(element, keys)` in `@repo/portal` (tested)
-- [ ] Store updates for text, fields, button and logo clear the changed keys' overrides, and the override actions for them are gone (tested)
-- [ ] Spec §6.6 describes overrides as coming only from templates, brand fitting and background positions
+- [x] `clearOverridesFor(element, keys)` in `@repo/portal` (tested)
+- [x] Store updates for text, fields, button and logo clear the changed keys' overrides, and the override actions for them are gone (tested)
+- [x] Spec §6.6 describes overrides as coming only from templates, brand fitting and background positions

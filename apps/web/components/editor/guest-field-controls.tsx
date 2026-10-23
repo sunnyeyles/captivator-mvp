@@ -14,7 +14,6 @@ import {
   SPACE_ABOVE_MIN,
   type GuestField,
   type GuestFieldType,
-  type StyleOverride,
 } from "@repo/portal";
 import { Trash2 } from "lucide-react";
 import { useId } from "react";
@@ -23,7 +22,7 @@ import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
-import { DeviceOverrideNumberField } from "./device-override-number-field";
+import { ValidatedField } from "./validated-field";
 
 function isGuestFieldType(value: string): value is GuestFieldType {
   return guestFieldTypes.some((type) => type === value);
@@ -33,30 +32,12 @@ export function GuestFieldControls({ field }: { field: GuestField }) {
   const fields = usePortalEditorStore((state) => state.config.fields);
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
   const updateField = usePortalEditorStore((state) => state.updateField);
-  const overrideField = usePortalEditorStore((state) => state.overrideField);
-  const clearFieldOverride = usePortalEditorStore(
-    (state) => state.clearFieldOverride,
-  );
   const removeField = usePortalEditorStore((state) => state.removeField);
   const labelId = useId();
   const placeholderId = useId();
   const defaults = guestFieldDefaults[field.type];
 
   const resolved = resolveForDevice(field, deviceMode);
-  const deviceOverride = field.overrides?.[deviceMode];
-  const widthOverridden = deviceOverride?.width !== undefined;
-  const spaceAboveOverridden = deviceOverride?.spaceAbove !== undefined;
-  const sharedWidth = field.width ?? layoutDefaults.fieldWidth;
-  const sharedSpaceAbove = field.spaceAbove ?? layoutDefaults.spaceAbove;
-
-  // An overridable control edits the active device's override once one exists, and the shared value otherwise
-  function updateStyle(
-    overridden: boolean,
-    changes: StyleOverride<GuestField>,
-  ) {
-    if (overridden) overrideField(field.id, deviceMode, changes);
-    else updateField(field.id, changes);
-  }
 
   return (
     <div className="grid gap-4">
@@ -143,37 +124,29 @@ export function GuestFieldControls({ field }: { field: GuestField }) {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`width-${deviceMode}`}
         label="Width (%)"
-        property="width"
-        device={deviceMode}
-        overridden={widthOverridden}
-        value={resolved.width ?? sharedWidth}
+        type="number"
+        inputMode="numeric"
         min={ELEMENT_WIDTH_MIN}
         max={ELEMENT_WIDTH_MAX}
+        step={1}
+        value={resolved.width ?? layoutDefaults.fieldWidth}
         schema={guestFieldSchema.shape.width.unwrap()}
-        onOverride={() =>
-          overrideField(field.id, deviceMode, { width: sharedWidth })
-        }
-        onClear={() => clearFieldOverride(field.id, deviceMode, "width")}
-        onValueChange={(width) => updateStyle(widthOverridden, { width })}
+        onValueChange={(width) => updateField(field.id, { width })}
       />
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`space-above-${deviceMode}`}
         label="Space above (px)"
-        property="space above"
-        device={deviceMode}
-        overridden={spaceAboveOverridden}
-        value={resolved.spaceAbove ?? sharedSpaceAbove}
+        type="number"
+        inputMode="numeric"
         min={SPACE_ABOVE_MIN}
         max={SPACE_ABOVE_MAX}
+        step={1}
+        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
         schema={guestFieldSchema.shape.spaceAbove.unwrap()}
-        onOverride={() =>
-          overrideField(field.id, deviceMode, { spaceAbove: sharedSpaceAbove })
-        }
-        onClear={() => clearFieldOverride(field.id, deviceMode, "spaceAbove")}
-        onValueChange={(spaceAbove) =>
-          updateStyle(spaceAboveOverridden, { spaceAbove })
-        }
+        onValueChange={(spaceAbove) => updateField(field.id, { spaceAbove })}
       />
       <Button
         variant="outline"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clearDeviceOverride,
+  clearOverridesFor,
   resolveForDevice,
   setDeviceOverride,
 } from "./overrides";
@@ -103,5 +104,31 @@ describe("clearDeviceOverride", () => {
 
   it("does nothing when the key was not overridden", () => {
     expect(clearDeviceOverride(text, "desktop", "textAlign")).toEqual(text);
+  });
+});
+
+describe("clearOverridesFor", () => {
+  it("removes the keys on every device and keeps other overrides", () => {
+    const element: TextElement = {
+      ...text,
+      overrides: {
+        desktop: { fontSize: 60 },
+        mobile: { fontSize: 24, textAlign: "left" },
+      },
+    };
+
+    expect(clearOverridesFor(element, ["fontSize"]).overrides).toEqual({
+      mobile: { textAlign: "left" },
+    });
+  });
+
+  it("returns to an element with no overrides once none are left", () => {
+    const overridden = setDeviceOverride(text, "tablet", { fontSize: 24 });
+
+    expect(clearOverridesFor(overridden, ["fontSize", "text"])).toEqual(text);
+  });
+
+  it("ignores keys that are not overridden", () => {
+    expect(clearOverridesFor(text, ["text"])).toEqual(text);
   });
 });

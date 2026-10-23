@@ -12,34 +12,16 @@ import {
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
   type ConnectButton,
-  type StyleOverride,
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
-import { DeviceOverrideNumberField } from "./device-override-number-field";
 import { ValidatedField } from "./validated-field";
 
 export function ButtonControls({ button }: { button: ConnectButton }) {
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
   const updateButton = usePortalEditorStore((state) => state.updateButton);
-  const overrideButton = usePortalEditorStore((state) => state.overrideButton);
-  const clearButtonOverride = usePortalEditorStore(
-    (state) => state.clearButtonOverride,
-  );
 
   const resolved = resolveForDevice(button, deviceMode);
-  const deviceOverride = button.overrides?.[deviceMode];
-  const widthOverridden = deviceOverride?.width !== undefined;
-  const spaceAboveOverridden = deviceOverride?.spaceAbove !== undefined;
-
-  // An overridable control edits the active device's override once one exists, and the shared value otherwise
-  function updateStyle(
-    overridden: boolean,
-    changes: StyleOverride<ConnectButton>,
-  ) {
-    if (overridden) overrideButton(deviceMode, changes);
-    else updateButton(changes);
-  }
 
   return (
     <div className="grid gap-4">
@@ -72,37 +54,29 @@ export function ButtonControls({ button }: { button: ConnectButton }) {
         schema={buttonSchema.shape.borderRadius}
         onValueChange={(borderRadius) => updateButton({ borderRadius })}
       />
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`width-${deviceMode}`}
         label="Width (%)"
-        property="width"
-        device={deviceMode}
-        overridden={widthOverridden}
-        value={resolved.width}
+        type="number"
+        inputMode="numeric"
         min={ELEMENT_WIDTH_MIN}
         max={ELEMENT_WIDTH_MAX}
+        step={1}
+        value={resolved.width}
         schema={buttonSchema.shape.width}
-        onOverride={() => overrideButton(deviceMode, { width: button.width })}
-        onClear={() => clearButtonOverride(deviceMode, "width")}
-        onValueChange={(width) => updateStyle(widthOverridden, { width })}
+        onValueChange={(width) => updateButton({ width })}
       />
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`space-above-${deviceMode}`}
         label="Space above (px)"
-        property="space above"
-        device={deviceMode}
-        overridden={spaceAboveOverridden}
-        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
+        type="number"
+        inputMode="numeric"
         min={SPACE_ABOVE_MIN}
         max={SPACE_ABOVE_MAX}
+        step={1}
+        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
         schema={buttonSchema.shape.spaceAbove.unwrap()}
-        onOverride={() =>
-          overrideButton(deviceMode, {
-            spaceAbove: button.spaceAbove ?? layoutDefaults.spaceAbove,
-          })
-        }
-        onClear={() => clearButtonOverride(deviceMode, "spaceAbove")}
-        onValueChange={(spaceAbove) =>
-          updateStyle(spaceAboveOverridden, { spaceAbove })
-        }
+        onValueChange={(spaceAbove) => updateButton({ spaceAbove })}
       />
     </div>
   );

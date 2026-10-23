@@ -9,10 +9,9 @@ import {
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
   type Logo,
-  type StyleOverride,
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
-import { DeviceOverrideNumberField } from "./device-override-number-field";
+import { ValidatedField } from "./validated-field";
 import { ImageUploadField } from "./image-upload-field";
 
 export function LogoControls() {
@@ -41,60 +40,35 @@ export function LogoControls() {
 
 export function LogoLayoutControls({ logo }: { logo: Logo }) {
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
-  const updateBranding = usePortalEditorStore((state) => state.updateBranding);
-  const overrideLogo = usePortalEditorStore((state) => state.overrideLogo);
-  const clearLogoOverride = usePortalEditorStore(
-    (state) => state.clearLogoOverride,
-  );
+  const updateLogo = usePortalEditorStore((state) => state.updateLogo);
 
   const resolved = resolveForDevice(logo, deviceMode);
-  const deviceOverride = logo.overrides?.[deviceMode];
-  const maxHeightOverridden = deviceOverride?.maxHeight !== undefined;
-  const spaceAboveOverridden = deviceOverride?.spaceAbove !== undefined;
-  const sharedMaxHeight = logo.maxHeight ?? layoutDefaults.logoMaxHeight;
-  const sharedSpaceAbove = logo.spaceAbove ?? layoutDefaults.spaceAbove;
-
-  // An overridable control edits the active device's override once one exists, and the shared value otherwise
-  function updateStyle(overridden: boolean, changes: StyleOverride<Logo>) {
-    if (overridden) overrideLogo(deviceMode, changes);
-    else updateBranding({ logo: { ...logo, ...changes } });
-  }
 
   return (
     <div className="grid gap-4">
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`max-height-${deviceMode}`}
         label="Max height (px)"
-        property="max height"
-        device={deviceMode}
-        overridden={maxHeightOverridden}
-        value={resolved.maxHeight ?? sharedMaxHeight}
+        type="number"
+        inputMode="numeric"
         min={LOGO_MAX_HEIGHT_MIN}
         max={LOGO_MAX_HEIGHT_MAX}
+        step={1}
+        value={resolved.maxHeight ?? layoutDefaults.logoMaxHeight}
         schema={logoSchema.shape.maxHeight.unwrap()}
-        onOverride={() =>
-          overrideLogo(deviceMode, { maxHeight: sharedMaxHeight })
-        }
-        onClear={() => clearLogoOverride(deviceMode, "maxHeight")}
-        onValueChange={(maxHeight) =>
-          updateStyle(maxHeightOverridden, { maxHeight })
-        }
+        onValueChange={(maxHeight) => updateLogo({ maxHeight })}
       />
-      <DeviceOverrideNumberField
+      <ValidatedField
+        key={`space-above-${deviceMode}`}
         label="Space above (px)"
-        property="space above"
-        device={deviceMode}
-        overridden={spaceAboveOverridden}
-        value={resolved.spaceAbove ?? sharedSpaceAbove}
+        type="number"
+        inputMode="numeric"
         min={SPACE_ABOVE_MIN}
         max={SPACE_ABOVE_MAX}
+        step={1}
+        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
         schema={logoSchema.shape.spaceAbove.unwrap()}
-        onOverride={() =>
-          overrideLogo(deviceMode, { spaceAbove: sharedSpaceAbove })
-        }
-        onClear={() => clearLogoOverride(deviceMode, "spaceAbove")}
-        onValueChange={(spaceAbove) =>
-          updateStyle(spaceAboveOverridden, { spaceAbove })
-        }
+        onValueChange={(spaceAbove) => updateLogo({ spaceAbove })}
       />
     </div>
   );

@@ -3,9 +3,17 @@
 import {
   defaultOverlay,
   type BackgroundImage,
+  type Device,
   type PortalConfig,
 } from "@repo/portal";
-import { LoaderCircle, Move, RotateCcw } from "lucide-react";
+import {
+  LoaderCircle,
+  Monitor,
+  Move,
+  RotateCcw,
+  Smartphone,
+  Tablet,
+} from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { Button } from "@repo/ui/button";
 import { Label } from "@repo/ui/label";
@@ -16,8 +24,13 @@ import { prepareBackgroundImage } from "@/lib/background-analysis";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { BackgroundColorControl } from "./background-color-control";
 import { ColorField } from "./color-field";
-import { deviceDetails } from "./device-override-field";
 import { ImageUploadField } from "./image-upload-field";
+
+const deviceDetails: Record<Device, { name: string; icon: typeof Monitor }> = {
+  desktop: { name: "desktop", icon: Monitor },
+  tablet: { name: "tablet", icon: Tablet },
+  mobile: { name: "mobile", icon: Smartphone },
+};
 
 const typeOptions: {
   value: PortalConfig["background"]["type"];

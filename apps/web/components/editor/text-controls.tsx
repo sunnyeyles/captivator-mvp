@@ -8,7 +8,6 @@ import {
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
   textElementSchema,
-  type StyleOverride,
   type TextElement,
 } from "@repo/portal";
 import { AlignCenter, AlignLeft, AlignRight, Trash2 } from "lucide-react";
@@ -20,8 +19,7 @@ import { Textarea } from "@repo/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
-import { DeviceOverrideField } from "./device-override-field";
-import { DeviceOverrideNumberField } from "./device-override-number-field";
+import { ValidatedField } from "./validated-field";
 
 const weightOptions: { value: TextElement["fontWeight"]; label: string }[] = [
   { value: 400, label: "Regular" },
@@ -95,28 +93,10 @@ function FontSizeField({
 export function TextControls({ text }: { text: TextElement }) {
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
   const updateText = usePortalEditorStore((state) => state.updateText);
-  const overrideText = usePortalEditorStore((state) => state.overrideText);
-  const clearTextOverride = usePortalEditorStore(
-    (state) => state.clearTextOverride,
-  );
   const removeText = usePortalEditorStore((state) => state.removeText);
   const contentId = useId();
 
   const resolved = resolveForDevice(text, deviceMode);
-  const deviceOverride = text.overrides?.[deviceMode];
-  const fontSizeOverridden = deviceOverride?.fontSize !== undefined;
-  const textAlignOverridden = deviceOverride?.textAlign !== undefined;
-  const spaceAboveOverridden = deviceOverride?.spaceAbove !== undefined;
-  const sharedSpaceAbove = text.spaceAbove ?? layoutDefaults.spaceAbove;
-
-  // An overridable control edits the active device's override once one exists, and the shared value otherwise
-  function updateStyle(
-    overridden: boolean,
-    changes: StyleOverride<TextElement>,
-  ) {
-    if (overridden) overrideText(text.id, deviceMode, changes);
-    else updateText(text.id, changes);
-  }
 
   return (
     <div className="grid gap-4">
@@ -135,22 +115,12 @@ export function TextControls({ text }: { text: TextElement }) {
         color={text.color}
         onChange={(color) => updateText(text.id, { color })}
       />
-      <DeviceOverrideField
-        property="font size"
-        device={deviceMode}
-        overridden={fontSizeOverridden}
-        onOverride={() =>
-          overrideText(text.id, deviceMode, { fontSize: text.fontSize })
-        }
-        onClear={() => clearTextOverride(text.id, deviceMode, "fontSize")}
-      >
-        <FontSizeField
-          // Remounts when the edited value switches between shared and override so no draft carries across
-          key={`${deviceMode}-${fontSizeOverridden}`}
-          fontSize={resolved.fontSize}
-          onChange={(fontSize) => updateStyle(fontSizeOverridden, { fontSize })}
-        />
-      </DeviceOverrideField>
+      <FontSizeField
+        // Remounts on a device switch so no draft carries across
+        key={`font-size-${deviceMode}`}
+        fontSize={resolved.fontSize}
+        onChange={(fontSize) => updateText(text.id, { fontSize })}
+      />
       <div className="grid gap-2">
         <Label asChild>
           <span>Font weight</span>
@@ -180,15 +150,7 @@ export function TextControls({ text }: { text: TextElement }) {
           ))}
         </ToggleGroup>
       </div>
-      <DeviceOverrideField
-        property="alignment"
-        device={deviceMode}
-        overridden={textAlignOverridden}
-        onOverride={() =>
-          overrideText(text.id, deviceMode, { textAlign: text.textAlign })
-        }
-        onClear={() => clearTextOverride(text.id, deviceMode, "textAlign")}
-      >
+      <div className="grid gap-2">
         <Label asChild>
           <span>Alignment</span>
         </Label>
@@ -202,9 +164,7 @@ export function TextControls({ text }: { text: TextElement }) {
             const option = alignOptions.find(
               (candidate) => candidate.value === value,
             );
-            if (option) {
-              updateStyle(textAlignOverridden, { textAlign: option.value });
-            }
+            if (option) updateText(text.id, { textAlign: option.value });
           }}
         >
           {alignOptions.map(({ value, label, icon: Icon }) => (
@@ -213,23 +173,18 @@ export function TextControls({ text }: { text: TextElement }) {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </DeviceOverrideField>
-      <DeviceOverrideNumberField
+      </div>
+      <ValidatedField
+        key={`space-above-${deviceMode}`}
         label="Space above (px)"
-        property="space above"
-        device={deviceMode}
-        overridden={spaceAboveOverridden}
-        value={resolved.spaceAbove ?? sharedSpaceAbove}
+        type="number"
+        inputMode="numeric"
         min={SPACE_ABOVE_MIN}
         max={SPACE_ABOVE_MAX}
+        step={1}
+        value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
         schema={textElementSchema.shape.spaceAbove.unwrap()}
-        onOverride={() =>
-          overrideText(text.id, deviceMode, { spaceAbove: sharedSpaceAbove })
-        }
-        onClear={() => clearTextOverride(text.id, deviceMode, "spaceAbove")}
-        onValueChange={(spaceAbove) =>
-          updateStyle(spaceAboveOverridden, { spaceAbove })
-        }
+        onValueChange={(spaceAbove) => updateText(text.id, { spaceAbove })}
       />
       <Button
         variant="outline"

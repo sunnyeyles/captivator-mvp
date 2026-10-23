@@ -209,7 +209,7 @@ Space above adds to the device layout's own spacing between elements. Each overr
 
 Layout arrangement remains a possible future override.
 
-Overrides should be explicit rather than automatically creating separate designs for each device. In the sidebar, the user chooses to override a property for the active device, sees which properties are overridden, and can clear an override back to the shared value. Templates may ship their own overrides, and switching template replaces any existing overrides with the template's.
+The editor does not expose overrides for elements, because a per-field override control made the sidebar hard to read. Overrides come from templates and from brand fitting (a long business name gets a smaller heading on mobile). Every element edit sets the shared value and clears that property's overrides on every device, so an edit always shows on the canvas. Switching template replaces any existing overrides with the template's.
 
 Background image position is the one property that is per device from the start, because each device gets its own automatic position (see section 9). Dragging the image in reposition mode always acts on the active device, so that drag is the explicit choice to override. The sidebar marks the device as adjusted, and **Reset to automatic** clears the override back to the automatic position.
 

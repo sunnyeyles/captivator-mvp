@@ -65,3 +65,22 @@ export function clearDeviceOverride<Element extends Overridable>(
   else delete result.overrides;
   return result as Element;
 }
+
+/** Returns the element with the given keys' overrides removed on every device, so the shared value applies everywhere. */
+export function clearOverridesFor<Element extends Overridable>(
+  element: Element,
+  keys: readonly string[],
+): Element {
+  const overrides: Partial<Record<string, object>> = {};
+  for (const [device, override] of Object.entries(element.overrides ?? {})) {
+    const remaining = Object.entries(override ?? {}).filter(
+      ([key]) => !keys.includes(key),
+    );
+    if (remaining.length > 0) overrides[device] = Object.fromEntries(remaining);
+  }
+  const result: Overridable = { ...element };
+  // An element with nothing overridden carries no overrides key, matching one that never had any
+  if (Object.keys(overrides).length > 0) result.overrides = overrides;
+  else delete result.overrides;
+  return result as Element;
+}
