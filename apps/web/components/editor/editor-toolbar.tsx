@@ -1,5 +1,4 @@
 import { BackToDesignsLink } from "./back-to-designs-link";
-import { CanvasModeSwitcher } from "./canvas-mode-switcher";
 import { CurrentDesignStatus } from "./current-design-status";
 import { DesignNameField } from "./design-name-field";
 import { DeviceModeSwitcher } from "./device-mode-switcher";
@@ -18,7 +17,6 @@ export function EditorToolbar() {
       <DeviceModeSwitcher />
       <div className="flex items-center gap-2 lg:justify-self-end">
         <HistoryControls />
-        <CanvasModeSwitcher />
         <SaveControls />
         <EditorMenu />
       </div>
