@@ -13,5 +13,5 @@
 - [x] Publish and Take offline are available from the card menu and the editor toolbar, and publishing from the editor saves any unsaved changes first
 - [x] Publishing asks for confirmation, naming both designs, only when it would replace a different live design. A first publish and republishing the live design go straight through. Take offline always asks for confirmation. Use the shadcn alert dialog
 - [x] `/live` renders the live snapshot with `SplashPage` in `mode: "published"`, makes no network connection, and shows a "Nothing is live" state with a link to the library when nothing is live. The Live badge links to it as "View live"
-- [x] `docs/MVP_SPEC.md` describes Designs, Publish and Live
+- [x] `.scratch/editor/spec.md` describes Designs, Publish and Live
 - [x] `lint`, `check-types`, tests and `build` are run for every workspace touched, and each is reported as passed, failed (with output) or not run

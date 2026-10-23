@@ -1,9 +1,6 @@
-# Wi-Fi Splash Page Builder — Product & Technical Specification
+# Wi-Fi splash page builder
 
-**Architecture:** Turborepo monorepo  
-**Frontend:** Next.js, React, TypeScript, Tailwind CSS, shadcn/ui  
-**State management:** Zustand  
-**Status:** MVP specification with proposed future infrastructure
+**Status:** done
 
 ## 1. Product Overview
 
@@ -11,13 +8,13 @@ A visual Wi-Fi splash page builder that enables customers to create and customis
 
 Users can start from professionally designed templates, upload branding assets, customise text and colours, configure guest information fields, and edit their splash page visually.
 
-The editor supports two design modes: **Desktop** and **Mobile**. Users can switch between these modes while creating their splash page, view the corresponding layout, and make changes directly in either mode.
+The editor supports three design modes: **Desktop**, **Tablet** and **Mobile**. Users can switch between these modes while creating their splash page, view the corresponding layout, and make changes directly in any mode.
 
 The product should provide an intuitive WYSIWYG experience for non-technical customers.
 
 ### Objectives
 
-- Provide a visual splash page editor with desktop and mobile editing modes.
+- Provide a visual splash page editor with desktop, tablet and mobile editing modes.
 - Include reusable, customisable templates.
 - Support customer logos, images, backgrounds, colours and text.
 - Allow configuration of up to two guest input fields.
@@ -29,19 +26,19 @@ The product should provide an intuitive WYSIWYG experience for non-technical cus
 
 ## 2. Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Monorepo | Turborepo |
-| Framework | Next.js (App Router) |
-| Language | TypeScript |
-| UI | React |
-| Components | shadcn/ui |
-| Styling | Tailwind CSS |
-| State management | Zustand |
-| Validation | Zod |
-| Icons | Lucide React |
-| Package management | pnpm |
-| Deployment | Vercel or equivalent |
+| Layer              | Technology           |
+| ------------------ | -------------------- |
+| Monorepo           | Turborepo            |
+| Framework          | Next.js (App Router) |
+| Language           | TypeScript           |
+| UI                 | React                |
+| Components         | shadcn/ui            |
+| Styling            | Tailwind CSS         |
+| State management   | Zustand              |
+| Validation         | Zod                  |
+| Icons              | Lucide React         |
+| Package management | pnpm                 |
+| Deployment         | Vercel or equivalent |
 
 The core editor operates client-side and does not require a database or external API.
 
@@ -116,20 +113,17 @@ The editor contains three main areas.
 ### Application Toolbar
 
 - Application identity
-- Template selection
-- Desktop/Mobile mode switcher
-- Optional reset, undo and redo controls
+- Desktop/Tablet/Mobile mode switcher
+- Undo and redo, a Preview toggle, Save and Publish
+- A menu holding Reset to template, away from undo so it is not hit by mistake
 
 ### Properties Sidebar
 
-Grouped editing controls:
+The sidebar shows one thing at a time, so the customer always knows where an edit goes.
 
-1. Templates
-2. Branding and images
-3. Background
-4. Text
-5. Guest fields
-6. Connect button
+**Nothing selected:** the Page panel holds Change design, one dialog for switching template or generating designs from the customer's website, since both replace the current design. Below it are the page's elements (logo, texts, guest fields and Connect button, with Add text and Add field) and the background. Choosing an element in the list selects it.
+
+**An element selected**, from the list or the canvas: only that element's controls, with a way back to the page.
 
 ### Interactive Design Canvas
 
@@ -137,19 +131,19 @@ The canvas displays the active device layout and responds immediately to configu
 
 Users can select elements in the canvas and modify them using the properties sidebar.
 
-The canvas must support both desktop and mobile editing modes.
+The canvas must support desktop, tablet and mobile editing modes.
 
-## 6. Desktop and Mobile Editing
+## 6. Desktop, Tablet and Mobile Editing
 
 ### 6.1 Device Mode Switcher
 
 Provide a clearly visible segmented control in the editor toolbar:
 
-**Desktop | Mobile**
+**Desktop | Tablet | Mobile**
 
 Switching modes changes the canvas dimensions and renders the corresponding responsive layout.
 
-Users can edit their splash page in either mode.
+Users can edit their splash page in any mode.
 
 ### 6.2 Desktop Editing Mode
 
@@ -182,38 +176,49 @@ Users can:
 
 The mobile canvas should accurately represent a typical phone viewport.
 
-### 6.4 Shared Configuration
+### 6.4 Tablet Editing Mode
 
-Desktop and mobile modes operate on the same underlying portal configuration.
+Tablet mode displays a portrait tablet-sized splash page canvas (820 × 1180).
 
-Changes to shared properties, including text content, colours, images and field selection, are reflected in both modes.
+Users can perform all supported editing operations, select elements directly in the tablet canvas and review the layout between the phone and desktop sizes.
+
+### 6.5 Shared Configuration
+
+Desktop, tablet and mobile modes operate on the same underlying portal configuration.
+
+Changes to shared properties, including text content, colours, images and field selection, are reflected in every mode.
 
 Responsive layout rules determine how the configuration appears at each viewport size.
 
-### 6.5 Device-Specific Overrides
+### 6.6 Device-Specific Overrides
 
-The configuration architecture should allow optional device-specific styling.
+The configuration architecture allows optional device-specific styling. Each element can override these properties for desktop, tablet or mobile:
 
-Potential overrides include:
+| Element          | Overridable properties                    |
+| ---------------- | ----------------------------------------- |
+| Text             | Font size, text alignment, space above    |
+| Guest field      | Width (% of the form column), space above |
+| Connect button   | Width (% of the form column), space above |
+| Logo             | Maximum height, space above               |
+| Background image | Position                                  |
 
-- Font size
-- Text alignment
-- Image positioning
-- Spacing
-- Element width
-- Layout arrangement
+Space above adds to the device layout's own spacing between elements. Each override is validated against the same range as its shared value.
 
-Overrides should be explicit rather than automatically creating separate desktop and mobile designs.
+Layout arrangement remains a possible future override.
+
+The editor does not expose overrides for elements, because a per-field override control made the sidebar hard to read. Overrides come from templates and from brand fitting (a long business name gets a smaller heading on mobile). Every element edit sets the shared value and clears that property's overrides on every device, so an edit always shows on the canvas. Switching template replaces any existing overrides with the template's.
+
+Background image position is the one property that is per device from the start, because each device gets its own automatic position (see section 9). Dragging the image in reposition mode always acts on the active device, so that drag is the explicit choice to override. The sidebar marks the device as adjusted, and **Reset to automatic** clears the override back to the automatic position.
 
 When no override exists, the shared configuration is used.
 
-### 6.6 Editing Versus Preview
+### 6.7 Editing Versus Preview
 
 **Editing mode:** Users can select elements and modify their properties while viewing the selected device layout.
 
 **Preview mode:** Users see the resulting splash page without editor selection indicators or editing controls inside the canvas.
 
-Both modes should support desktop and mobile viewports.
+Both modes should support desktop, tablet and mobile viewports.
 
 ## 7. Template System
 
@@ -227,7 +232,7 @@ Templates are included in the MVP.
 - Load template settings into Zustand.
 - Support editing after selection.
 - Render templates through the shared portal renderer.
-- Ensure templates support both desktop and mobile layouts.
+- Ensure templates support desktop, tablet and mobile layouts.
 
 ### Initial Templates
 
@@ -259,7 +264,7 @@ Zustand manages the active splash page configuration and editor interface state.
 ### Example Store Interface
 
 ```ts
-type DeviceMode = "desktop" | "mobile";
+type DeviceMode = "desktop" | "tablet" | "mobile";
 type CanvasMode = "edit" | "preview";
 
 interface PortalEditorStore {
@@ -273,24 +278,15 @@ interface PortalEditorStore {
   setCanvasMode: (mode: CanvasMode) => void;
   selectElement: (id: string | null) => void;
 
-  updateBranding: (
-    changes: Partial<PortalConfig["branding"]>
-  ) => void;
+  updateBranding: (changes: Partial<PortalConfig["branding"]>) => void;
 
-  updateBackground: (
-    changes: Partial<PortalConfig["background"]>
-  ) => void;
+  updateBackground: (changes: Partial<PortalConfig["background"]>) => void;
 
-  updateText: (
-    id: string,
-    changes: Partial<TextElement>
-  ) => void;
+  updateText: (id: string, changes: Partial<TextElement>) => void;
 
   setFields: (fields: GuestField[]) => void;
 
-  updateButton: (
-    changes: Partial<PortalConfig["button"]>
-  ) => void;
+  updateButton: (changes: Partial<PortalConfig["button"]>) => void;
 
   reset: () => void;
 }
@@ -310,10 +306,11 @@ Editor Controls / Canvas Interaction
                 v
        Responsive Renderer
                 |
-         +------+------+
-         |             |
-         v             v
-    Desktop View    Mobile View
+         +-------+-------+
+         |       |       |
+         v       v       v
+    Desktop   Tablet   Mobile
+     View      View     View
 ```
 
 Switching device modes must not discard configuration changes.
@@ -328,8 +325,14 @@ Background options:
 
 - Solid colour
 - Uploaded image
-- Image positioning and fitting where supported
+- Image fitting (fill or fit) and per-device positioning
 - Optional overlay
+
+The image is shown unmodified with CSS `object-fit` and a per-device `object-position`, stored as `x`/`y` percentages in the portal config. No cropped or re-encoded copy is made, and the published page needs no JavaScript to position it.
+
+When a background image is uploaded, the editor analyses it in the browser with Smartcrop.js, loaded on first use, and places it with a recommended position for desktop, tablet and mobile in one undo step. A short "finding the best crop" state shows meanwhile. If analysis fails, the image can't be decoded or analysis takes over 2 seconds, the image is placed centred with a quiet note. A newer upload always wins over a late result. Templates' images are never analysed.
+
+The recommendation only applies when the image fills the page. With fit, the whole image shows, so it stays centred. For each device the position resolves to the user's adjustment for that device, then the recommendation, then the shared position. The user can drag the image, or nudge it with the arrow keys, in **Reposition** mode, which adjusts only the active device (see section 6.6).
 
 Images may be represented with browser object URLs during local editing.
 
@@ -375,7 +378,7 @@ Requirements:
 - Zero, one or two active fields
 - Selection and replacement of field types
 - Removal of fields
-- Immediate updates in both device modes
+- Immediate updates in every device mode
 - Maximum of two active fields
 
 Optional settings include labels, placeholders, field order and required status.
@@ -411,7 +414,7 @@ The renderer converts portal configuration into a responsive splash page.
 - Display uploaded images.
 - Render text and fields.
 - Apply button styles.
-- Adapt layouts to desktop and mobile.
+- Adapt layouts to desktop, tablet and mobile.
 - Apply device-specific overrides where defined.
 - Support editing and preview presentation.
 
@@ -420,15 +423,11 @@ The renderer converts portal configuration into a responsive splash page.
 ```tsx
 interface SplashPageProps {
   config: PortalConfig;
-  device: "desktop" | "mobile";
+  device: "desktop" | "tablet" | "mobile";
   mode: "edit" | "preview" | "published";
 }
 
-function SplashPage({
-  config,
-  device,
-  mode,
-}: SplashPageProps) {
+function SplashPage({ config, device, mode }: SplashPageProps) {
   // Render the configured portal
 }
 ```
@@ -456,11 +455,25 @@ All templates should conform to the same configuration schema.
 
 ## 15. Optional Product Enhancements
 
-### Local Persistence
+### Designs
 
-Save configuration locally so users can resume editing.
+Users keep a library of named designs, each a saved portal configuration and template. The library at `/` lists them as cards with a rendered thumbnail, last edited time, status and a menu with Rename, Duplicate, Publish / Take offline and Delete. New designs start from a template and are named after it.
 
-Uploaded assets require an appropriate persistence strategy such as IndexedDB or external storage.
+Each design opens in the editor at `/designs/[id]`. Saving is explicit (Save button or ⌘S/Ctrl+S), and the toolbar shows "Unsaved changes" whenever the editor differs from the last save. Leaving with unsaved changes asks for confirmation. Device mode, canvas mode and selection are never saved.
+
+All persistence goes through one async `DesignRepository` interface. The demo implements it with localStorage, inlining uploaded images as data URLs on save. A real backend replaces this implementation without changing the UI.
+
+### Publish and Live
+
+Publishing freezes a snapshot of a design's saved configuration as the single live page. Later edits don't reach guests until the design is published again.
+
+- At most one design is live. Publishing replaces the live design, after a confirmation naming both designs. A first publish and republishing the live design need no confirmation.
+- Publishing from the editor saves unsaved changes first.
+- Take offline clears the live page, after a confirmation.
+- The live design can't be deleted until it's taken offline.
+- Each design shows a status: Draft, Live, or "Live · unpublished changes" when its saved configuration differs from the snapshot.
+
+`/live` renders the snapshot with `SplashPage` in `published` mode, as a guest would see it, and never makes a network connection. When nothing is live it says so and links back to the library.
 
 ### Undo and Redo
 
@@ -491,16 +504,16 @@ AI-generated output should conform to the portal schema and use the existing ren
 
 The following services represent a possible production extension and are not required for the standalone editor.
 
-| Capability | Proposed Technology |
-|---|---|
-| Hosting | Vercel |
-| Database | Supabase PostgreSQL |
-| Authentication | Supabase Auth |
-| Asset storage | Supabase Storage |
-| Transactional email | Resend |
-| AI generation | LLM API |
+| Capability           | Proposed Technology       |
+| -------------------- | ------------------------- |
+| Hosting              | Vercel                    |
+| Database             | Supabase PostgreSQL       |
+| Authentication       | Supabase Auth             |
+| Asset storage        | Supabase Storage          |
+| Transactional email  | Resend                    |
+| AI generation        | LLM API                   |
 | Background workflows | Trigger.dev or equivalent |
-| Network integration | Hardware/API adapter |
+| Network integration  | Hardware/API adapter      |
 
 ### Conceptual Flow
 
@@ -520,7 +533,7 @@ Passwordless Login
 Splash Page Editor
        |
        +--- Templates
-       +--- Desktop / Mobile Editing
+       +--- Desktop / Tablet / Mobile Editing
        +--- Branding / AI
        +--- Zustand Configuration
        |
@@ -573,15 +586,17 @@ The editor and renderer should remain independent of authentication, rental mana
 - [ ] Users can configure up to two guest input fields.
 - [ ] Users can customise Connect button background and text colours.
 
-### Desktop and Mobile Editing
+### Desktop, Tablet and Mobile Editing
 
 - [ ] Desktop editing mode is available.
+- [ ] Tablet editing mode is available.
 - [ ] Mobile editing mode is available.
 - [ ] Users can switch between device modes.
-- [ ] Both modes support the full editing workflow.
-- [ ] Users can select elements within either canvas.
+- [ ] Every mode supports the full editing workflow.
+- [ ] Users can select elements within any canvas.
 - [ ] Changes update immediately.
-- [ ] Shared changes appear in both device modes.
+- [ ] Shared changes appear in every device mode.
+- [ ] Device-specific overrides are explicit, marked and clearable.
 - [ ] Responsive layouts adapt to each viewport.
 - [ ] Switching modes preserves edits.
 - [ ] Preview-only presentation is available without editing indicators.

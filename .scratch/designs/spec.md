@@ -1,6 +1,6 @@
 # Saved designs and publishing
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 
@@ -182,5 +182,5 @@ Prior art: `editor-store.test.ts` resets the store state before each test and dr
 
 ## Further Notes
 
-- The spec's §15 "Local Persistence" and §16 publishing flow are what this feature delivers in demo form. Once it lands, update `docs/MVP_SPEC.md` to describe Designs, Publish and Live.
+- The spec's §15 "Local Persistence" and §16 publishing flow are what this feature delivers in demo form. Once it lands, update `.scratch/editor/spec.md` to describe Designs, Publish and Live.
 - Blob URLs are revoked when they leave the editor history. Data URLs from saved designs aren't object URLs, so the existing revoke logic ignores them.
