@@ -1,6 +1,7 @@
 import { isIP } from "node:net";
 import {
   BRAND_COLORS_MAX,
+  BRAND_DESCRIPTION_MAX,
   BRAND_NAME_MAX,
   brandDetails,
   contrastRatio,
@@ -159,6 +160,16 @@ function cleanName(value: unknown) {
   if (typeof value !== "string") return null;
   const name = value.replace(/\s+/g, " ").trim();
   return name.length > 0 && name.length <= BRAND_NAME_MAX ? name : null;
+}
+
+// A description past the cap is cut at a word, since it only seeds the agent's copy
+function cleanDescription(value: string | undefined) {
+  const text = value?.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  if (text.length <= BRAND_DESCRIPTION_MAX) return text;
+  const cut = text.slice(0, BRAND_DESCRIPTION_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 0 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 function jsonLdNodes(value: unknown): Record<string, unknown>[] {
@@ -551,6 +562,11 @@ export async function importBrand(
     return {
       sourceUrl: base.href,
       name: name ?? nameFromHostname(base.hostname),
+      description: cleanDescription(
+        ["og:description", "description", "twitter:description"]
+          .map((key) => metaContent(page, key))
+          .find((content) => content?.trim()),
+      ),
       logo,
       image,
       imageRecommended: null,

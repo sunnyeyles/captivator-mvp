@@ -16,11 +16,15 @@ export const BRAND_NAME_MAX = 60;
 
 export const BRAND_COLORS_MAX = 6;
 
+export const BRAND_DESCRIPTION_MAX = 200;
+
 /** What a website branding import extracts, and what branded designs are built from. */
 export const brandProfileSchema = z.object({
   // The page's final address after redirects
   sourceUrl: z.url({ protocol: /^https?$/ }),
   name: z.string().trim().min(1).max(BRAND_NAME_MAX),
+  // Optional so brands saved before descriptions were imported still load
+  description: z.string().max(BRAND_DESCRIPTION_MAX).nullable().optional(),
   // Data URLs, so a design never depends on the customer's site staying up
   logo: z.string().nullable(),
   image: z.string().nullable(),

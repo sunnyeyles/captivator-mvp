@@ -1,4 +1,8 @@
-import { brandProfileSchema, IMAGE_MAX_BYTES } from "@repo/portal";
+import {
+  BRAND_DESCRIPTION_MAX,
+  brandProfileSchema,
+  IMAGE_MAX_BYTES,
+} from "@repo/portal";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   IMPORT_BUDGET_MS,
@@ -222,6 +226,7 @@ describe("importBrand name extraction", () => {
     expect(brand).toEqual({
       sourceUrl: SITE,
       name: "Acme Title",
+      description: null,
       logo: null,
       image: null,
       imageRecommended: null,
@@ -248,6 +253,52 @@ describe("importBrand name extraction", () => {
     );
 
     expect(brand.name).toBe("Acme Title");
+  });
+});
+
+describe("importBrand description", () => {
+  const og =
+    '<meta property="og:description" content="Fresh  roasts &amp; more">';
+  const plain = '<meta name="description" content="Plain description">';
+  const twitter = '<meta name="twitter:description" content="Twitter copy">';
+
+  it("prefers og:description, decoding entities and collapsing spaces", async () => {
+    const { brand } = await importPage(page(plain + twitter + og));
+
+    expect(brand.description).toBe("Fresh roasts & more");
+  });
+
+  it("falls back to the description meta tag", async () => {
+    const { brand } = await importPage(page(twitter + plain));
+
+    expect(brand.description).toBe("Plain description");
+  });
+
+  it("falls back to twitter:description", async () => {
+    const { brand } = await importPage(page(twitter));
+
+    expect(brand.description).toBe("Twitter copy");
+  });
+
+  it("skips an empty description", async () => {
+    const { brand } = await importPage(
+      page('<meta name="description" content="  ">' + twitter),
+    );
+
+    expect(brand.description).toBe("Twitter copy");
+  });
+
+  it(`cuts a long description at a word within ${BRAND_DESCRIPTION_MAX} characters`, async () => {
+    const long = "word ".repeat(100);
+    const { brand } = await importPage(
+      page(`<meta name="description" content="${long}">`),
+    );
+
+    expect(brand.description!.length).toBeLessThanOrEqual(
+      BRAND_DESCRIPTION_MAX,
+    );
+    expect(brand.description).toMatch(/word…$/);
+    expect(brandProfileSchema.safeParse(brand).error).toBeUndefined();
   });
 });
 
@@ -795,6 +846,7 @@ describe("importBrand full profile and request limit", () => {
     expect(brand).toEqual({
       sourceUrl: SITE,
       name: "Acme Coffee",
+      description: null,
       logo: dataUrl(pngBytes, "image/png"),
       image: dataUrl(jpegBytes, "image/jpeg"),
       imageRecommended: null,

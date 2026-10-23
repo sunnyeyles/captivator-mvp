@@ -1471,6 +1471,34 @@ describe("agent generation", () => {
     expect(getState().past).toEqual([]);
   });
 
+  it("keeps the base's images alive while a reply replaces them, and frees the reply's on failure", () => {
+    const revoke = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+    const oldLogo = { src: "blob:http://localhost/old-logo", alt: "Logo" };
+    const newLogo = { src: "blob:http://localhost/new-logo", alt: "Logo" };
+    getState().loadDesign({
+      config: {
+        ...defaultPortalConfig,
+        branding: { ...defaultPortalConfig.branding, logo: oldLogo },
+      },
+      templateId: "minimal",
+      brand: null,
+    });
+    revoke.mockClear();
+
+    getState().previewGeneratedConfig({
+      ...defaultPortalConfig,
+      branding: { ...defaultPortalConfig.branding, logo: newLogo },
+    });
+    expect(revoke).not.toHaveBeenCalled();
+
+    getState().finishGeneration(null);
+    expect(getState().config.branding.logo).toEqual(oldLogo);
+    expect(revoke).toHaveBeenCalledExactlyOnceWith(newLogo.src);
+    revoke.mockRestore();
+  });
+
   it("ignores undo while a reply streams", () => {
     getState().updateBackground({ color: "#0ea5e9" });
     getState().previewGeneratedConfig(generated);
