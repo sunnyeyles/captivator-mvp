@@ -3,15 +3,19 @@ import {
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
+  CONNECT_BUTTON_ID,
   defaultTextStyle,
   guestFieldTypes,
   LOGO_ELEMENT_ID,
+  logoSchema,
   portalConfigSchema,
   setDeviceOverride,
   templates,
   textElementSchema,
+  type ConnectButton,
   type Device,
   type GuestField,
+  type Logo,
   type PortalConfig,
   type StyleOverride,
   type TemplateId,
@@ -66,6 +70,26 @@ interface PortalEditorActions {
     device: Device,
     key: keyof StyleOverride<TextElement>,
   ) => void;
+  overrideField: (
+    id: string,
+    device: Device,
+    changes: StyleOverride<GuestField>,
+  ) => void;
+  clearFieldOverride: (
+    id: string,
+    device: Device,
+    key: keyof StyleOverride<GuestField>,
+  ) => void;
+  overrideButton: (
+    device: Device,
+    changes: StyleOverride<ConnectButton>,
+  ) => void;
+  clearButtonOverride: (
+    device: Device,
+    key: keyof StyleOverride<ConnectButton>,
+  ) => void;
+  overrideLogo: (device: Device, changes: StyleOverride<Logo>) => void;
+  clearLogoOverride: (device: Device, key: keyof StyleOverride<Logo>) => void;
 }
 
 export type PortalEditorStore = PortalEditorState & PortalEditorActions;
@@ -112,6 +136,43 @@ function replaceText(
       texts: state.config.texts.map((text) =>
         text.id === id ? parsed.data : text,
       ),
+    },
+  };
+}
+
+function replaceField(
+  state: PortalEditorState,
+  id: string,
+  edit: (current: GuestField) => GuestField,
+): Partial<PortalEditorState> {
+  const config = withFields(
+    state,
+    state.config.fields.map((field) => (field.id === id ? edit(field) : field)),
+  );
+  return config ? { config } : state;
+}
+
+function replaceButton(
+  state: PortalEditorState,
+  edit: (current: ConnectButton) => unknown,
+): Partial<PortalEditorState> {
+  const parsed = buttonSchema.safeParse(edit(state.config.button));
+  if (!parsed.success) return state;
+  return { config: { ...state.config, button: parsed.data } };
+}
+
+function replaceLogo(
+  state: PortalEditorState,
+  edit: (current: Logo) => unknown,
+): Partial<PortalEditorState> {
+  const { logo } = state.config.branding;
+  if (!logo) return state;
+  const parsed = logoSchema.safeParse(edit(logo));
+  if (!parsed.success) return state;
+  return {
+    config: {
+      ...state.config,
+      branding: { ...state.config.branding, logo: parsed.data },
     },
   };
 }
@@ -171,7 +232,10 @@ type EditorUpdate =
   | Partial<PortalEditorState>
   | ((state: PortalEditorStore) => Partial<PortalEditorState>);
 
-export const usePortalEditorStore = create<PortalEditorStore>()((setState, getState) => {
+export const usePortalEditorStore = create<PortalEditorStore>()((
+  setState,
+  getState,
+) => {
   let gesture: Gesture | null = null;
 
   // Records every config change, merging a drag or typing run on one target into one undo step
@@ -274,36 +338,42 @@ export const usePortalEditorStore = create<PortalEditorStore>()((setState, getSt
     selectElement: (selectedElementId) => set({ selectedElementId }),
 
     updateBackground: (changes) =>
-      set((state) => {
-        const parsed = backgroundSchema.safeParse({
-          ...state.config.background,
-          ...changes,
-        });
-        // The renderer trusts the config, so invalid edits never reach it
-        if (!parsed.success) return state;
-        return { config: { ...state.config, background: parsed.data } };
-      }, gestureKey(
-        "background",
-        changedPaths(getState().config.background, changes),
-      )),
+      set(
+        (state) => {
+          const parsed = backgroundSchema.safeParse({
+            ...state.config.background,
+            ...changes,
+          });
+          // The renderer trusts the config, so invalid edits never reach it
+          if (!parsed.success) return state;
+          return { config: { ...state.config, background: parsed.data } };
+        },
+        gestureKey(
+          "background",
+          changedPaths(getState().config.background, changes),
+        ),
+      ),
 
     updateBranding: (changes) =>
-      set((state) => {
-        const parsed = brandingSchema.safeParse({
-          ...state.config.branding,
-          ...changes,
-        });
-        if (!parsed.success) return state;
-        const logoRemoved =
-          !parsed.data.logo && state.selectedElementId === LOGO_ELEMENT_ID;
-        return {
-          config: { ...state.config, branding: parsed.data },
-          selectedElementId: logoRemoved ? null : state.selectedElementId,
-        };
-      }, gestureKey(
-        "branding",
-        changedPaths(getState().config.branding, changes),
-      )),
+      set(
+        (state) => {
+          const parsed = brandingSchema.safeParse({
+            ...state.config.branding,
+            ...changes,
+          });
+          if (!parsed.success) return state;
+          const logoRemoved =
+            !parsed.data.logo && state.selectedElementId === LOGO_ELEMENT_ID;
+          return {
+            config: { ...state.config, branding: parsed.data },
+            selectedElementId: logoRemoved ? null : state.selectedElementId,
+          };
+        },
+        gestureKey(
+          "branding",
+          changedPaths(getState().config.branding, changes),
+        ),
+      ),
 
     addText: () =>
       set((state) => {
@@ -365,15 +435,31 @@ export const usePortalEditorStore = create<PortalEditorStore>()((setState, getSt
       }),
 
     updateField: (id, changes) =>
-      set((state) => {
-        const config = withFields(
-          state,
-          state.config.fields.map((field) =>
-            field.id === id ? { ...field, ...changes, id } : field,
+      set(
+        (state) =>
+          replaceField(state, id, (current) => ({
+            ...current,
+            ...changes,
+            id,
+          })),
+        gestureKey("field", Object.keys(changes), id),
+      ),
+
+    overrideField: (id, device, changes) =>
+      set(
+        (state) =>
+          replaceField(state, id, (current) =>
+            setDeviceOverride(current, device, changes),
           ),
-        );
-        return config ? { config } : state;
-      }, gestureKey("field", Object.keys(changes), id)),
+        gestureKey(`override-${device}`, Object.keys(changes), id),
+      ),
+
+    clearFieldOverride: (id, device, key) =>
+      set((state) =>
+        replaceField(state, id, (current) =>
+          clearDeviceOverride(current, device, key),
+        ),
+      ),
 
     removeField: (id) =>
       set((state) => ({
@@ -397,14 +483,47 @@ export const usePortalEditorStore = create<PortalEditorStore>()((setState, getSt
       }),
 
     updateButton: (changes) =>
-      set((state) => {
-        const parsed = buttonSchema.safeParse({
-          ...state.config.button,
-          ...changes,
-        });
-        if (!parsed.success) return state;
-        return { config: { ...state.config, button: parsed.data } };
-      }, gestureKey("button", Object.keys(changes))),
+      set(
+        (state) =>
+          replaceButton(state, (current) => ({ ...current, ...changes })),
+        gestureKey("button", Object.keys(changes)),
+      ),
+
+    overrideButton: (device, changes) =>
+      set(
+        (state) =>
+          replaceButton(state, (current) =>
+            setDeviceOverride(current, device, changes),
+          ),
+        gestureKey(
+          `override-${device}`,
+          Object.keys(changes),
+          CONNECT_BUTTON_ID,
+        ),
+      ),
+
+    clearButtonOverride: (device, key) =>
+      set((state) =>
+        replaceButton(state, (current) =>
+          clearDeviceOverride(current, device, key),
+        ),
+      ),
+
+    overrideLogo: (device, changes) =>
+      set(
+        (state) =>
+          replaceLogo(state, (current) =>
+            setDeviceOverride(current, device, changes),
+          ),
+        gestureKey(`override-${device}`, Object.keys(changes), LOGO_ELEMENT_ID),
+      ),
+
+    clearLogoOverride: (device, key) =>
+      set((state) =>
+        replaceLogo(state, (current) =>
+          clearDeviceOverride(current, device, key),
+        ),
+      ),
   };
 });
 

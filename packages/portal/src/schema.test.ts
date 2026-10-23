@@ -5,8 +5,8 @@ import {
   BUTTON_LABEL_MAX,
   BUTTON_RADIUS_MAX,
   BUTTON_RADIUS_MIN,
-  BUTTON_WIDTH_MAX,
-  BUTTON_WIDTH_MIN,
+  ELEMENT_WIDTH_MAX,
+  ELEMENT_WIDTH_MIN,
   buttonSchema,
   colorSchema,
   FONT_SIZE_MAX,
@@ -16,7 +16,12 @@ import {
   guestFieldSchema,
   IMAGE_MAX_BYTES,
   imageFileSchema,
+  LOGO_MAX_HEIGHT_MAX,
+  LOGO_MAX_HEIGHT_MIN,
+  logoSchema,
   portalConfigSchema,
+  SPACE_ABOVE_MAX,
+  SPACE_ABOVE_MIN,
   textElementSchema,
   type ConnectButton,
   type GuestField,
@@ -115,6 +120,7 @@ describe("textElementSchema", () => {
     {},
     { mobile: { fontSize: 24 } },
     { tablet: { fontSize: 32, textAlign: "left" } },
+    { mobile: { spaceAbove: SPACE_ABOVE_MAX } },
     {
       desktop: { textAlign: "left" },
       mobile: { fontSize: FONT_SIZE_MIN, textAlign: "right" },
@@ -131,6 +137,7 @@ describe("textElementSchema", () => {
     { desktop: { fontSize: 20.5 } },
     { mobile: { textAlign: "justify" } },
     { tablet: { fontSize: FONT_SIZE_MAX + 1 } },
+    { mobile: { spaceAbove: SPACE_ABOVE_MAX + 1 } },
   ])("validates override %j like the shared style", (overrides) => {
     expect(textElementSchema.safeParse({ ...text, overrides }).success).toBe(
       false,
@@ -146,6 +153,24 @@ describe("textElementSchema", () => {
       false,
     );
   });
+
+  it.each([SPACE_ABOVE_MIN, 24, SPACE_ABOVE_MAX])(
+    "accepts space above %d",
+    (spaceAbove) => {
+      expect(textElementSchema.safeParse({ ...text, spaceAbove }).success).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each([SPACE_ABOVE_MIN - 1, SPACE_ABOVE_MAX + 1, 8.5, Number.NaN])(
+    "rejects space above %d",
+    (spaceAbove) => {
+      expect(textElementSchema.safeParse({ ...text, spaceAbove }).success).toBe(
+        false,
+      );
+    },
+  );
 
   it("rejects an empty id", () => {
     expect(textElementSchema.safeParse({ ...text, id: "" }).success).toBe(
@@ -225,6 +250,42 @@ describe("guest fields", () => {
     ).toBe(false);
   });
 
+  it.each([ELEMENT_WIDTH_MIN, 60, ELEMENT_WIDTH_MAX])(
+    "accepts width %d",
+    (width) => {
+      expect(guestFieldSchema.safeParse({ ...name, width }).success).toBe(true);
+    },
+  );
+
+  it.each([ELEMENT_WIDTH_MIN - 1, ELEMENT_WIDTH_MAX + 1, 50.5])(
+    "rejects width %d",
+    (width) => {
+      expect(guestFieldSchema.safeParse({ ...name, width }).success).toBe(
+        false,
+      );
+    },
+  );
+
+  it.each([
+    { mobile: { width: ELEMENT_WIDTH_MIN } },
+    { tablet: { spaceAbove: 16 }, desktop: { width: 80 } },
+  ])("accepts overrides %j", (overrides) => {
+    expect(guestFieldSchema.safeParse({ ...name, overrides }).success).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    { mobile: { width: ELEMENT_WIDTH_MAX + 1 } },
+    { mobile: { spaceAbove: -1 } },
+    { mobile: { label: "Mobile only" } },
+    { mobile: { required: true } },
+  ])("rejects override %j", (overrides) => {
+    expect(guestFieldSchema.safeParse({ ...name, overrides }).success).toBe(
+      false,
+    );
+  });
+
   it("rejects a non-boolean required flag", () => {
     expect(
       guestFieldSchema.safeParse({ ...name, required: "yes" }).success,
@@ -267,19 +328,37 @@ describe("buttonSchema", () => {
     },
   );
 
-  it.each([BUTTON_WIDTH_MIN, 60, BUTTON_WIDTH_MAX])(
+  it.each([ELEMENT_WIDTH_MIN, 60, ELEMENT_WIDTH_MAX])(
     "accepts width %d",
     (width) => {
       expect(buttonSchema.safeParse({ ...button, width }).success).toBe(true);
     },
   );
 
-  it.each([BUTTON_WIDTH_MIN - 1, BUTTON_WIDTH_MAX + 1, 0, 50.5, Number.NaN])(
+  it.each([ELEMENT_WIDTH_MIN - 1, ELEMENT_WIDTH_MAX + 1, 0, 50.5, Number.NaN])(
     "rejects width %d",
     (width) => {
       expect(buttonSchema.safeParse({ ...button, width }).success).toBe(false);
     },
   );
+
+  it.each([
+    { mobile: { width: ELEMENT_WIDTH_MIN } },
+    { tablet: { spaceAbove: SPACE_ABOVE_MAX }, desktop: { width: 60 } },
+  ])("accepts overrides %j", (overrides) => {
+    expect(buttonSchema.safeParse({ ...button, overrides }).success).toBe(true);
+  });
+
+  it.each([
+    { mobile: { width: ELEMENT_WIDTH_MIN - 1 } },
+    { mobile: { spaceAbove: SPACE_ABOVE_MAX + 1 } },
+    { mobile: { borderRadius: 4 } },
+    { mobile: { label: "Go" } },
+  ])("rejects override %j", (overrides) => {
+    expect(buttonSchema.safeParse({ ...button, overrides }).success).toBe(
+      false,
+    );
+  });
 
   it.each(["", "   ", "a".repeat(BUTTON_LABEL_MAX + 1)])(
     "rejects label %j",
@@ -356,6 +435,37 @@ describe("branding", () => {
         branding: { logo: { src: "blob:http://localhost/2", alt: "Logo" } },
       }).success,
     ).toBe(true);
+  });
+
+  const logo = { src: "blob:http://localhost/2", alt: "Logo" };
+
+  it.each([LOGO_MAX_HEIGHT_MIN, 96, LOGO_MAX_HEIGHT_MAX])(
+    "accepts a logo max height of %d",
+    (maxHeight) => {
+      expect(logoSchema.safeParse({ ...logo, maxHeight }).success).toBe(true);
+    },
+  );
+
+  it.each([LOGO_MAX_HEIGHT_MIN - 1, LOGO_MAX_HEIGHT_MAX + 1, 40.5])(
+    "rejects a logo max height of %d",
+    (maxHeight) => {
+      expect(logoSchema.safeParse({ ...logo, maxHeight }).success).toBe(false);
+    },
+  );
+
+  it.each([
+    { mobile: { maxHeight: LOGO_MAX_HEIGHT_MIN } },
+    { tablet: { spaceAbove: 8 } },
+  ])("accepts logo overrides %j", (overrides) => {
+    expect(logoSchema.safeParse({ ...logo, overrides }).success).toBe(true);
+  });
+
+  it.each([
+    { mobile: { maxHeight: LOGO_MAX_HEIGHT_MAX + 1 } },
+    { mobile: { src: "blob:http://localhost/3" } },
+    { mobile: { alt: "Mobile logo" } },
+  ])("rejects logo override %j", (overrides) => {
+    expect(logoSchema.safeParse({ ...logo, overrides }).success).toBe(false);
   });
 
   it("rejects a logo without a source", () => {

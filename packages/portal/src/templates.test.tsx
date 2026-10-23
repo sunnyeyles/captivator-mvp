@@ -59,6 +59,20 @@ describe("templates", () => {
     }
   });
 
+  it("shrinks the Event title on mobile with a preset override", () => {
+    const render = (device: "desktop" | "mobile") =>
+      renderToStaticMarkup(
+        <SplashPage
+          config={templates.event.config}
+          device={device}
+          mode="preview"
+        />,
+      );
+
+    expect(render("desktop")).toContain("font-size:56px");
+    expect(render("mobile")).toContain("font-size:40px");
+  });
+
   it("starts Minimal from the default design with a centred logo", () => {
     const html = renderToStaticMarkup(
       <SplashPage

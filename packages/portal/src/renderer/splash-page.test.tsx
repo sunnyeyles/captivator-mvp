@@ -121,6 +121,65 @@ describe("SplashPage", () => {
     expect(mobile).toContain("font-weight:600");
   });
 
+  it("resolves spacing and width overrides for every element", () => {
+    const overridden: PortalConfig = {
+      ...config,
+      texts: [
+        {
+          ...config.texts[0]!,
+          spaceAbove: 8,
+          overrides: { mobile: { spaceAbove: 4 } },
+        },
+      ],
+      fields: [
+        {
+          ...config.fields[0]!,
+          width: 80,
+          spaceAbove: 12,
+          overrides: { mobile: { width: 50 } },
+        },
+      ],
+      button: {
+        ...config.button,
+        spaceAbove: 20,
+        overrides: { mobile: { width: 90, spaceAbove: 6 } },
+      },
+      branding: {
+        logo: {
+          src: "blob:http://localhost/logo",
+          alt: "Acme logo",
+          maxHeight: 120,
+          overrides: { mobile: { maxHeight: 48, spaceAbove: 2 } },
+        },
+      },
+    };
+    const desktop = renderToStaticMarkup(
+      <SplashPage config={overridden} device="desktop" mode="preview" />,
+    );
+    const mobile = renderToStaticMarkup(
+      <SplashPage config={overridden} device="mobile" mode="preview" />,
+    );
+
+    expect(desktop).toContain("margin-top:8px");
+    expect(desktop).toContain("width:80%;margin-top:12px");
+    expect(desktop).toContain("width:60%;margin-top:20px");
+    expect(desktop).toContain("max-height:120px");
+    expect(mobile).toContain("margin-top:4px");
+    expect(mobile).toContain("width:50%;margin-top:12px");
+    expect(mobile).toContain("width:90%;margin-top:6px");
+    expect(mobile).toContain("max-height:48px;margin-top:2px");
+  });
+
+  it("uses layout defaults where no spacing or size is set", () => {
+    const html = renderToStaticMarkup(
+      <SplashPage config={imageConfig} device="mobile" mode="preview" />,
+    );
+
+    expect(html).not.toContain("margin-top");
+    expect(html).toContain("width:100%");
+    expect(html).toContain("max-height:96px");
+  });
+
   it.each(devices)(
     "marks the selected element in edit mode on %s",
     (device) => {

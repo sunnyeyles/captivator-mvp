@@ -1,5 +1,9 @@
 import { useId, type CSSProperties } from "react";
-import { CONNECT_BUTTON_ID, guestFieldDefaults } from "../defaults";
+import {
+  CONNECT_BUTTON_ID,
+  guestFieldDefaults,
+  layoutDefaults,
+} from "../defaults";
 import { resolveForDevice } from "../overrides";
 import type {
   Device,
@@ -28,25 +32,22 @@ export const LOGO_ELEMENT_ID = "logo";
 
 const layoutByDevice: Record<
   Device,
-  { page: string; content: string; form: string; logo: string }
+  { page: string; content: string; form: string }
 > = {
   desktop: {
     page: "px-16",
     content: "max-w-3xl gap-4",
     form: "max-w-sm",
-    logo: "max-h-28",
   },
   tablet: {
     page: "px-12",
     content: "max-w-xl gap-4",
     form: "max-w-sm",
-    logo: "max-h-24",
   },
   mobile: {
     page: "px-6",
     content: "max-w-full gap-3",
     form: "max-w-full",
-    logo: "max-h-20",
   },
 };
 
@@ -65,7 +66,7 @@ function GuestFieldInput({
   labelStyle,
   selection,
 }: {
-  field: GuestField;
+  field: Omit<GuestField, "overrides">;
   inputId: string;
   labelStyle: CSSProperties;
   selection: Selection;
@@ -74,7 +75,14 @@ function GuestFieldInput({
   const editing = selection.mode === "edit";
 
   return (
-    <div className="grid gap-1.5" {...selectableProps(field.id, selection)}>
+    <div
+      className="grid gap-1.5 self-center"
+      style={{
+        width: `${field.width ?? layoutDefaults.fieldWidth}%`,
+        marginTop: field.spaceAbove,
+      }}
+      {...selectableProps(field.id, selection)}
+    >
       <label
         htmlFor={inputId}
         className="text-sm font-medium"
@@ -121,7 +129,10 @@ export function SplashPage({
   const layout = layoutByDevice[device];
   const selection = { mode, selectedElementId, onSelectElement };
   const inputIdPrefix = useId();
-  const { background, branding, button } = config;
+  const { background } = config;
+  const logo =
+    config.branding.logo && resolveForDevice(config.branding.logo, device);
+  const button = resolveForDevice(config.button, device);
   const overlay =
     background.type === "image" ? background.image?.overlay : null;
   const labelStyle = guestLabelStyle(background);
@@ -143,11 +154,15 @@ export function SplashPage({
         />
       ) : null}
       <div className={`relative flex w-full flex-col ${layout.content}`}>
-        {branding.logo ? (
+        {logo ? (
           <img
-            src={branding.logo.src}
-            alt={branding.logo.alt}
-            className={`w-auto max-w-full self-center object-contain ${layout.logo}`}
+            src={logo.src}
+            alt={logo.alt}
+            className="w-auto max-w-full self-center object-contain"
+            style={{
+              maxHeight: logo.maxHeight ?? layoutDefaults.logoMaxHeight,
+              marginTop: logo.spaceAbove,
+            }}
             {...selectableProps(LOGO_ELEMENT_ID, selection)}
           />
         ) : null}
@@ -163,6 +178,7 @@ export function SplashPage({
                 fontSize: text.fontSize,
                 fontWeight: text.fontWeight,
                 textAlign: text.textAlign,
+                marginTop: text.spaceAbove,
               }}
               {...selectableProps(text.id, selection)}
             >
@@ -173,15 +189,17 @@ export function SplashPage({
         <div
           className={`flex w-full flex-col gap-3 self-center pt-2 ${layout.form}`}
         >
-          {config.fields.map((field) => (
-            <GuestFieldInput
-              key={field.id}
-              field={field}
-              inputId={`${inputIdPrefix}-${field.id}`}
-              labelStyle={labelStyle}
-              selection={selection}
-            />
-          ))}
+          {config.fields
+            .map((field) => resolveForDevice(field, device))
+            .map((field) => (
+              <GuestFieldInput
+                key={field.id}
+                field={field}
+                inputId={`${inputIdPrefix}-${field.id}`}
+                labelStyle={labelStyle}
+                selection={selection}
+              />
+            ))}
           <button
             type="button"
             className="h-11 self-center px-4 text-base font-semibold"
@@ -190,6 +208,7 @@ export function SplashPage({
               color: button.textColor,
               borderRadius: button.borderRadius,
               width: `${button.width}%`,
+              marginTop: button.spaceAbove,
             }}
             {...selectableProps(CONNECT_BUTTON_ID, selection)}
           >

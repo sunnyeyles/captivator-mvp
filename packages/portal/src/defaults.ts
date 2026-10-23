@@ -13,6 +13,13 @@ export const defaultTextStyle: Omit<TextElement, "id" | "text"> = {
   textAlign: "center",
 };
 
+/** The spacing and sizes an element uses until the user sets its own. */
+export const layoutDefaults = {
+  spaceAbove: 0,
+  fieldWidth: 100,
+  logoMaxHeight: 96,
+} as const;
+
 /** The label and placeholder a guest field shows until the user sets its own. */
 export const guestFieldDefaults: Record<
   GuestFieldType,

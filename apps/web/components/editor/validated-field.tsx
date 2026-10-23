@@ -4,7 +4,7 @@ import { useId, useState, type ComponentProps } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface Validator<T> {
+export interface Validator<T> {
   safeParse: (
     value: unknown,
   ) =>

@@ -3,7 +3,10 @@
 import {
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
+  layoutDefaults,
   resolveForDevice,
+  SPACE_ABOVE_MAX,
+  SPACE_ABOVE_MIN,
   textElementSchema,
   type StyleOverride,
   type TextElement,
@@ -18,6 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
 import { DeviceOverrideField } from "./device-override-field";
+import { DeviceOverrideNumberField } from "./device-override-number-field";
 
 const weightOptions: { value: TextElement["fontWeight"]; label: string }[] = [
   { value: 400, label: "Regular" },
@@ -102,6 +106,8 @@ export function TextControls({ text }: { text: TextElement }) {
   const deviceOverride = text.overrides?.[deviceMode];
   const fontSizeOverridden = deviceOverride?.fontSize !== undefined;
   const textAlignOverridden = deviceOverride?.textAlign !== undefined;
+  const spaceAboveOverridden = deviceOverride?.spaceAbove !== undefined;
+  const sharedSpaceAbove = text.spaceAbove ?? layoutDefaults.spaceAbove;
 
   // An overridable control edits the active device's override once one exists, and the shared value otherwise
   function updateStyle(
@@ -208,6 +214,23 @@ export function TextControls({ text }: { text: TextElement }) {
           ))}
         </ToggleGroup>
       </DeviceOverrideField>
+      <DeviceOverrideNumberField
+        label="Space above (px)"
+        property="space above"
+        device={deviceMode}
+        overridden={spaceAboveOverridden}
+        value={resolved.spaceAbove ?? sharedSpaceAbove}
+        min={SPACE_ABOVE_MIN}
+        max={SPACE_ABOVE_MAX}
+        schema={textElementSchema.shape.spaceAbove.unwrap()}
+        onOverride={() =>
+          overrideText(text.id, deviceMode, { spaceAbove: sharedSpaceAbove })
+        }
+        onClear={() => clearTextOverride(text.id, deviceMode, "spaceAbove")}
+        onValueChange={(spaceAbove) =>
+          updateStyle(spaceAboveOverridden, { spaceAbove })
+        }
+      />
       <Button
         variant="outline"
         size="sm"

@@ -11,7 +11,7 @@ import {
 } from "@/lib/selected-element";
 import { ButtonControls } from "./button-controls";
 import { GuestFieldControls } from "./guest-field-controls";
-import { LogoControls } from "./logo-controls";
+import { LogoControls, LogoLayoutControls } from "./logo-controls";
 import { TextControls } from "./text-controls";
 
 function ElementControls({ selected }: { selected: SelectedElement }) {
@@ -23,7 +23,12 @@ function ElementControls({ selected }: { selected: SelectedElement }) {
     case "button":
       return <ButtonControls button={selected.element} />;
     case "logo":
-      return <LogoControls />;
+      return (
+        <div className="grid gap-4">
+          <LogoControls />
+          <LogoLayoutControls logo={selected.element} />
+        </div>
+      );
   }
 }
 

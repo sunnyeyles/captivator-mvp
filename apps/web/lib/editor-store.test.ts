@@ -848,3 +848,124 @@ describe("device overrides", () => {
     expect(getState().past).toEqual([]);
   });
 });
+
+describe("layout overrides on fields, the button and the logo", () => {
+  const fieldId = defaultPortalConfig.fields[0]!.id;
+  const field = () => getState().config.fields[0]!;
+  const logo = () => getState().config.branding.logo!;
+
+  it("overrides a field's width for one device", () => {
+    getState().updateField(fieldId, { width: 80 });
+    getState().overrideField(fieldId, "mobile", { width: 50 });
+
+    expect(field()).toMatchObject({
+      width: 80,
+      overrides: { mobile: { width: 50 } },
+    });
+  });
+
+  it("clears a field override back to the shared value", () => {
+    getState().overrideField(fieldId, "tablet", { spaceAbove: 16 });
+    getState().clearFieldOverride(fieldId, "tablet", "spaceAbove");
+
+    expect(field()).toEqual(defaultPortalConfig.fields[0]);
+  });
+
+  it("ignores an invalid field override", () => {
+    getState().overrideField(fieldId, "mobile", { width: 10 });
+
+    expect(getState().config.fields).toEqual(defaultPortalConfig.fields);
+  });
+
+  it("overrides the button's width and spacing for one device", () => {
+    getState().overrideButton("mobile", { width: 60, spaceAbove: 8 });
+    getState().updateButton({ width: 90 });
+
+    expect(getState().config.button).toMatchObject({
+      width: 90,
+      overrides: { mobile: { width: 60, spaceAbove: 8 } },
+    });
+  });
+
+  it("clears a button override and undoes the clear", () => {
+    getState().overrideButton("mobile", { width: 60 });
+    getState().clearButtonOverride("mobile", "width");
+
+    expect(getState().config.button).toEqual(defaultPortalConfig.button);
+
+    getState().undo();
+    expect(getState().config.button.overrides).toEqual({
+      mobile: { width: 60 },
+    });
+  });
+
+  it("ignores an invalid button override", () => {
+    getState().overrideButton("mobile", { width: 101 });
+
+    expect(getState().config.button).toEqual(defaultPortalConfig.button);
+  });
+
+  it("overrides the logo's size for one device and keeps it on replace", () => {
+    getState().overrideLogo("mobile", { maxHeight: 48 });
+    getState().updateBranding({
+      logo: { ...logo(), src: "blob:http://localhost/logo-2" },
+    });
+
+    expect(logo()).toMatchObject({
+      src: "blob:http://localhost/logo-2",
+      overrides: { mobile: { maxHeight: 48 } },
+    });
+  });
+
+  it("clears a logo override back to the shared value", () => {
+    const before = logo();
+    getState().overrideLogo("tablet", { spaceAbove: 12 });
+    getState().clearLogoOverride("tablet", "spaceAbove");
+
+    expect(logo()).toEqual(before);
+  });
+
+  it("ignores a logo override when there is no logo", () => {
+    getState().updateBranding({ logo: null });
+    getState().overrideLogo("mobile", { maxHeight: 48 });
+
+    expect(getState().config.branding.logo).toBeNull();
+  });
+
+  it("keeps every element's overrides when switching device mode", () => {
+    getState().overrideField(fieldId, "mobile", { width: 50 });
+    getState().overrideButton("tablet", { spaceAbove: 8 });
+    getState().overrideLogo("desktop", { maxHeight: 140 });
+    getState().setDeviceMode("mobile");
+    getState().setDeviceMode("tablet");
+
+    expect(field().overrides).toEqual({ mobile: { width: 50 } });
+    expect(getState().config.button.overrides).toEqual({
+      tablet: { spaceAbove: 8 },
+    });
+    expect(logo().overrides).toEqual({ desktop: { maxHeight: 140 } });
+  });
+
+  it("undoes and redoes a button override edit", () => {
+    getState().overrideButton("mobile", { width: 60 });
+    getState().undo();
+
+    expect(getState().config.button.overrides).toBeUndefined();
+
+    getState().redo();
+    expect(getState().config.button.overrides).toEqual({
+      mobile: { width: 60 },
+    });
+  });
+
+  it("replaces overrides with the template's on a template switch", () => {
+    getState().overrideButton("mobile", { width: 60 });
+    getState().setTemplate("event");
+
+    expect(getState().config).toBe(templates.event.config);
+    expect(getState().config.button.overrides).toBeUndefined();
+    expect(getState().config.texts[0]!.overrides).toEqual({
+      mobile: { fontSize: 40 },
+    });
+  });
+});

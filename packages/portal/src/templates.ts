@@ -36,6 +36,8 @@ const event: PortalTemplate = {
         color: "#ffffff",
         fontWeight: 700,
         textAlign: "center",
+        // Too wide for a phone at the desktop size, so the preset ships its own mobile size
+        overrides: { mobile: { fontSize: 40 } },
       },
       {
         id: "event-tagline",

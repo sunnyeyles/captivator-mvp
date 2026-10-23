@@ -13,6 +13,38 @@ export const fontWeights = [400, 500, 600, 700] as const;
 
 export const textAligns = ["left", "center", "right"] as const;
 
+export const SPACE_ABOVE_MIN = 0;
+export const SPACE_ABOVE_MAX = 96;
+
+// Extra space between an element and the one before it, on top of the device layout's gap
+const spaceAboveSchema = z
+  .number()
+  .int("Use a whole number")
+  .min(
+    SPACE_ABOVE_MIN,
+    `Use a spacing from ${SPACE_ABOVE_MIN} to ${SPACE_ABOVE_MAX}`,
+  )
+  .max(
+    SPACE_ABOVE_MAX,
+    `Use a spacing from ${SPACE_ABOVE_MIN} to ${SPACE_ABOVE_MAX}`,
+  );
+
+export const ELEMENT_WIDTH_MIN = 25;
+export const ELEMENT_WIDTH_MAX = 100;
+
+// A percentage of the form column, so one value suits every device width
+const elementWidthSchema = z
+  .number()
+  .int("Use a whole number")
+  .min(
+    ELEMENT_WIDTH_MIN,
+    `Use a width from ${ELEMENT_WIDTH_MIN} to ${ELEMENT_WIDTH_MAX}`,
+  )
+  .max(
+    ELEMENT_WIDTH_MAX,
+    `Use a width from ${ELEMENT_WIDTH_MIN} to ${ELEMENT_WIDTH_MAX}`,
+  );
+
 const textBaseSchema = z.object({
   id: z.string().min(1),
   text: z.string(),
@@ -24,12 +56,13 @@ const textBaseSchema = z.object({
   color: colorSchema,
   fontWeight: z.union(fontWeights.map((weight) => z.literal(weight))),
   textAlign: z.enum(textAligns),
+  spaceAbove: spaceAboveSchema.optional(),
 });
 
 export const textElementSchema = textBaseSchema.extend({
-  // Font size and alignment are the text styles that commonly need to differ on a small screen
+  // Size, alignment and spacing are the text styles that commonly need to differ on a small screen
   overrides: deviceOverridesSchema(
-    textBaseSchema.pick({ fontSize: true, textAlign: true }),
+    textBaseSchema.pick({ fontSize: true, textAlign: true, spaceAbove: true }),
   ).optional(),
 });
 
@@ -47,9 +80,31 @@ export const imageFileSchema = z.object({
 // A browser object URL while editing, a hosted URL once published
 const imageSrcSchema = z.string().min(1);
 
-export const logoSchema = z.object({
+export const LOGO_MAX_HEIGHT_MIN = 24;
+export const LOGO_MAX_HEIGHT_MAX = 200;
+
+const logoBaseSchema = z.object({
   src: imageSrcSchema,
   alt: z.string(),
+  maxHeight: z
+    .number()
+    .int("Use a whole number")
+    .min(
+      LOGO_MAX_HEIGHT_MIN,
+      `Use a height from ${LOGO_MAX_HEIGHT_MIN} to ${LOGO_MAX_HEIGHT_MAX}`,
+    )
+    .max(
+      LOGO_MAX_HEIGHT_MAX,
+      `Use a height from ${LOGO_MAX_HEIGHT_MIN} to ${LOGO_MAX_HEIGHT_MAX}`,
+    )
+    .optional(),
+  spaceAbove: spaceAboveSchema.optional(),
+});
+
+export const logoSchema = logoBaseSchema.extend({
+  overrides: deviceOverridesSchema(
+    logoBaseSchema.pick({ maxHeight: true, spaceAbove: true }),
+  ).optional(),
 });
 
 export const brandingSchema = z.object({
@@ -92,7 +147,7 @@ export const guestFieldTypes = ["name", "email", "phone"] as const;
 export const GUEST_FIELD_LABEL_MAX = 40;
 export const GUEST_FIELD_PLACEHOLDER_MAX = 60;
 
-export const guestFieldSchema = z.object({
+const guestFieldBaseSchema = z.object({
   id: z.string().min(1),
   type: z.enum(guestFieldTypes),
   label: z
@@ -110,15 +165,20 @@ export const guestFieldSchema = z.object({
     )
     .optional(),
   required: z.boolean().optional(),
+  width: elementWidthSchema.optional(),
+  spaceAbove: spaceAboveSchema.optional(),
+});
+
+export const guestFieldSchema = guestFieldBaseSchema.extend({
+  overrides: deviceOverridesSchema(
+    guestFieldBaseSchema.pick({ width: true, spaceAbove: true }),
+  ).optional(),
 });
 
 export const BUTTON_LABEL_MAX = 30;
 export const BUTTON_RADIUS_MIN = 0;
 export const BUTTON_RADIUS_MAX = 32;
-export const BUTTON_WIDTH_MIN = 25;
-export const BUTTON_WIDTH_MAX = 100;
-
-export const buttonSchema = z.object({
+const buttonBaseSchema = z.object({
   label: z
     .string()
     .max(BUTTON_LABEL_MAX, `Use at most ${BUTTON_LABEL_MAX} characters`)
@@ -136,18 +196,14 @@ export const buttonSchema = z.object({
       BUTTON_RADIUS_MAX,
       `Use a radius from ${BUTTON_RADIUS_MIN} to ${BUTTON_RADIUS_MAX}`,
     ),
-  // A percentage of the form column, so one value suits both device widths
-  width: z
-    .number()
-    .int("Use a whole number")
-    .min(
-      BUTTON_WIDTH_MIN,
-      `Use a width from ${BUTTON_WIDTH_MIN} to ${BUTTON_WIDTH_MAX}`,
-    )
-    .max(
-      BUTTON_WIDTH_MAX,
-      `Use a width from ${BUTTON_WIDTH_MIN} to ${BUTTON_WIDTH_MAX}`,
-    ),
+  width: elementWidthSchema,
+  spaceAbove: spaceAboveSchema.optional(),
+});
+
+export const buttonSchema = buttonBaseSchema.extend({
+  overrides: deviceOverridesSchema(
+    buttonBaseSchema.pick({ width: true, spaceAbove: true }),
+  ).optional(),
 });
 
 /** The full splash page design shared by every device and template. */
