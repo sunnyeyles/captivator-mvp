@@ -1,6 +1,7 @@
 import type {
   BackgroundPosition,
   BackgroundPositionRecommendation,
+  BrandProfile,
   Device,
 } from "@repo/portal";
 import { cropPosition, type Size } from "./background-geometry";
@@ -76,6 +77,12 @@ export async function analyseBackgroundImage(
   }
 }
 
+/** Starts downloading the analysis library early so it overlaps a wait that comes before the analysis. */
+export function preloadBackgroundAnalysis() {
+  // The analysis itself reports a failed load, so an early failure here needs no handling
+  import("smartcrop").catch(() => {});
+}
+
 /** Analyses an image and wraps it in a new object URL, ready for placing as the background. */
 export async function prepareBackgroundImage(image: Blob): Promise<{
   src: string;
@@ -83,4 +90,18 @@ export async function prepareBackgroundImage(image: Blob): Promise<{
 }> {
   const recommended = await analyseBackgroundImage(image);
   return { src: URL.createObjectURL(image), recommended };
+}
+
+/** Adds an imported brand's background recommendation, analysed from its data URL image, or null when it can't be analysed. */
+export async function analyseBrandImage(
+  brand: BrandProfile,
+): Promise<BrandProfile> {
+  if (!brand.image) return { ...brand, imageRecommended: null };
+  try {
+    // Fetching a data URL decodes it locally, so the image never needs an object URL
+    const image = await (await fetch(brand.image)).blob();
+    return { ...brand, imageRecommended: await analyseBackgroundImage(image) };
+  } catch {
+    return { ...brand, imageRecommended: null };
+  }
 }

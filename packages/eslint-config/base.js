@@ -3,6 +3,8 @@ import eslintConfigPrettier from "eslint-config-prettier";
 import turboPlugin from "eslint-plugin-turbo";
 import onlyWarn from "eslint-plugin-only-warn";
 import tseslint from "typescript-eslint";
+import { commentFormat } from "./rules/comment-format.js";
+import { noRelativeWorkspaceImport } from "./rules/no-relative-workspace-import.js";
 
 /**
  * A shared ESLint configuration for the repository.
@@ -20,6 +22,21 @@ export const config = [
     },
     rules: {
       "turbo/no-undeclared-env-vars": "warn",
+    },
+  },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+    plugins: {
+      local: {
+        rules: {
+          "comment-format": commentFormat,
+          "no-relative-workspace-import": noRelativeWorkspaceImport,
+        },
+      },
+    },
+    rules: {
+      "local/comment-format": "error",
+      "local/no-relative-workspace-import": "error",
     },
   },
   {

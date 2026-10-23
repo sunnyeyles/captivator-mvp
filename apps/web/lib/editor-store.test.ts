@@ -1364,6 +1364,54 @@ describe("branded designs", () => {
     expect(reusableBrand(getState(), "https://other.example/")).toBeNull();
   });
 
+  it("positions the imported Event image by its recommendation and resets to it", () => {
+    const recommended = {
+      desktop: { x: 50, y: 30 },
+      tablet: { x: 40, y: 50 },
+      mobile: { x: 72.5, y: 50 },
+    };
+    getState().applyBrandedDesign("event", {
+      ...brand,
+      image: "data:image/png;base64,AAAA",
+      imageRecommended: recommended,
+    });
+    const image = () => {
+      const current = getState().config.background.image;
+      if (!current) throw new Error("Expected a background image");
+      return current;
+    };
+
+    for (const device of ["desktop", "tablet", "mobile"] as const) {
+      expect(resolveBackgroundImage(image(), device).position).toEqual(
+        recommended[device],
+      );
+    }
+
+    getState().overrideBackgroundPosition("mobile", { x: 5, y: 5 });
+    expect(resolveBackgroundImage(image(), "mobile").position).toEqual({
+      x: 5,
+      y: 5,
+    });
+
+    getState().clearBackgroundPositionOverride("mobile");
+    expect(resolveBackgroundImage(image(), "mobile").position).toEqual(
+      recommended.mobile,
+    );
+  });
+
+  it("centres the imported Event image without a recommendation", () => {
+    getState().applyBrandedDesign("event", {
+      ...brand,
+      image: "data:image/png;base64,AAAA",
+    });
+    const image = getState().config.background.image;
+
+    expect(image && resolveBackgroundImage(image, "mobile").position).toEqual({
+      x: 50,
+      y: 50,
+    });
+  });
+
   it("leaves the design alone when a refresh replaces the draft", () => {
     getState().applyBrandedDesign("corporate", brand);
     getState().updateButton({ label: "Join" });
