@@ -8,7 +8,7 @@ import {
   type BrandProfile,
   type Device,
 } from "@repo/portal";
-import { useId, useState } from "react";
+import { memo, useDeferredValue, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,7 +58,8 @@ function MissingDetailsNote({ missing }: { missing: BrandProfile["missing"] }) {
   );
 }
 
-function DesignPreview({
+// Memoised so a deferred brand lets colour picker drags skip these full page renders until React is idle
+const DesignPreview = memo(function DesignPreview({
   brand,
   device,
   id,
@@ -96,6 +97,17 @@ function DesignPreview({
         </div>
       </div>
     </div>
+  );
+});
+
+// Only mounted while the dialog is open, so the full config comparison never runs on edits made with it closed
+function EditWarning() {
+  const atTemplateDefaults = usePortalEditorStore(isAtTemplateDefaults);
+  if (atTemplateDefaults) return null;
+  return (
+    <p className="rounded-md border bg-muted px-3 py-2 text-sm">
+      Using a design replaces your current edits. You can undo this.
+    </p>
   );
 }
 
@@ -153,12 +165,12 @@ export function BrandDesignChooser({
   onOpenChange,
 }: BrandDesignChooserProps) {
   const brand = usePortalEditorStore((state) => state.brandDraft);
-  const atTemplateDefaults = usePortalEditorStore(isAtTemplateDefaults);
   const applyBrandedDesign = usePortalEditorStore(
     (state) => state.applyBrandedDesign,
   );
   // Local so previewing another device never changes the editor's own device mode
   const [device, setDevice] = useState<Device>("desktop");
+  const previewBrand = useDeferredValue(brand);
 
   if (!brand) return null;
 
@@ -179,16 +191,14 @@ export function BrandDesignChooser({
         />
         <BrandColorRow brand={brand} />
         <MissingDetailsNote missing={brand.missing} />
-        {atTemplateDefaults ? null : (
-          <p className="rounded-md border bg-muted px-3 py-2 text-sm">
-            Using a design replaces your current edits. You can undo this.
-          </p>
-        )}
+        <EditWarning />
         <ul className="grid gap-4 sm:grid-cols-3">
           {templateIds.map((id) => (
             <li key={id} className="grid gap-3 rounded-lg border p-3">
               <h3 className="text-sm font-medium">{templates[id].name}</h3>
-              <DesignPreview brand={brand} device={device} id={id} />
+              {previewBrand ? (
+                <DesignPreview brand={previewBrand} device={device} id={id} />
+              ) : null}
               <Button
                 onClick={() => {
                   applyBrandedDesign(id, brand);
