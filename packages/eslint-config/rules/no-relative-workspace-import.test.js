@@ -23,6 +23,13 @@ ruleTester.run("no-relative-workspace-import", noRelativeWorkspaceImport, {
     { filename, code: 'const a = import("../next.js");' },
     { filename, code: "const a = import(`../next.js`);" },
     { filename, code: 'import a = require("./comment-format.js");' },
+    { filename, code: 'vi.mock("./comment-format.js");' },
+    { filename, code: 'const a = require("../base.js");' },
+    { filename, code: 'const a = load("../../portal/src/index");' },
+    {
+      filename: "<input>",
+      code: 'import { a } from "../../portal/src/index";',
+    },
   ],
   invalid: [
     {
@@ -53,6 +60,21 @@ ruleTester.run("no-relative-workspace-import", noRelativeWorkspaceImport, {
     {
       filename,
       code: "const a = import(`../../portal/src/index`);",
+      errors: [{ messageId: "crossesWorkspace" }],
+    },
+    {
+      filename,
+      code: 'vi.mock("../../../apps/web/lib/images");',
+      errors: [{ messageId: "crossesWorkspace" }],
+    },
+    {
+      filename,
+      code: 'const a = await vi.importActual("../../portal/src/index");',
+      errors: [{ messageId: "crossesWorkspace" }],
+    },
+    {
+      filename,
+      code: 'const a = require("../../portal/src/index");',
       errors: [{ messageId: "crossesWorkspace" }],
     },
   ],

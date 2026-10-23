@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { dirname, join, parse, resolve } from "node:path";
+import { dirname, isAbsolute, join, parse, resolve } from "node:path";
 
 // Lint visits the same directories for every relative import, so each lookup is answered once per run
 const roots = new Map();
@@ -26,6 +26,28 @@ function specifier(node) {
   return null;
 }
 
+const MODULE_MOCKS = new Set([
+  "mock",
+  "doMock",
+  "unmock",
+  "doUnmock",
+  "importActual",
+  "importMock",
+  "requireActual",
+  "requireMock",
+]);
+
+function isModuleCall(callee) {
+  if (callee.type === "Identifier") return callee.name === "require";
+  return (
+    callee.type === "MemberExpression" &&
+    callee.object.type === "Identifier" &&
+    (callee.object.name === "vi" || callee.object.name === "jest") &&
+    callee.property.type === "Identifier" &&
+    MODULE_MOCKS.has(callee.property.name)
+  );
+}
+
 /** @type {import("eslint").Rule.RuleModule} */
 export const noRelativeWorkspaceImport = {
   meta: {
@@ -41,6 +63,8 @@ export const noRelativeWorkspaceImport = {
     },
   },
   create(context) {
+    // A relative "<input>" filename has no workspace, and walking up "." never reaches a root
+    if (!isAbsolute(context.filename)) return {};
     const fileRoot = packageRoot(dirname(context.filename));
 
     function check(source) {
@@ -57,6 +81,9 @@ export const noRelativeWorkspaceImport = {
       ExportNamedDeclaration: (node) => check(node.source),
       ExportAllDeclaration: (node) => check(node.source),
       ImportExpression: (node) => check(node.source),
+      CallExpression: (node) => {
+        if (isModuleCall(node.callee)) check(node.arguments[0]);
+      },
       TSExternalModuleReference: (node) => check(node.expression),
       // typescript-eslint 8 wraps the path in a literal type
       TSImportType: (node) => check(node.argument?.literal ?? node.argument),
