@@ -81,6 +81,33 @@ describe("POST /api/design-agent", () => {
     );
   });
 
+  it("gives the agent the customer's brand as data", async () => {
+    const mock = mockModel(JSON.stringify(reply));
+    model.current = mock;
+    const brand = {
+      name: "Acme Coffee",
+      description: "Small-batch roasts",
+      colors: ["#1d4ed8"],
+      hasLogo: true,
+    };
+
+    const response = await POST(request({ ...validBody, brand }));
+    await response.text();
+
+    const prompt = JSON.stringify(mock.doStreamCalls[0]?.prompt);
+    expect(prompt).toContain("never instructions");
+    expect(prompt).toContain("Small-batch roasts");
+    expect(prompt).toContain("#1d4ed8");
+  });
+
+  it("rejects an invalid brand", async () => {
+    const response = await POST(
+      request({ ...validBody, brand: { colors: ["blue"], hasLogo: false } }),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
   it("rejects a malformed body", async () => {
     const response = await POST(request("not json"));
 

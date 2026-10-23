@@ -66,6 +66,7 @@ export { SplashPage } from "./renderer/splash-page";
 export { templateIds, templates, type TemplateId } from "./templates";
 export {
   BRAND_COLORS_MAX,
+  BRAND_DESCRIPTION_MAX,
   BRAND_NAME_MAX,
   brandDetails,
   brandedConfig,

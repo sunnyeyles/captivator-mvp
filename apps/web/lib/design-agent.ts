@@ -1,7 +1,11 @@
 import {
   backgroundSchema,
+  BRAND_COLORS_MAX,
+  BRAND_DESCRIPTION_MAX,
+  BRAND_NAME_MAX,
   buttonSchema,
   clearOverridesFor,
+  colorSchema,
   defaultTextStyle,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
@@ -11,12 +15,14 @@ import {
   portalConfigSchema,
   textAligns,
   textElementSchema,
+  type BackgroundPositionRecommendation,
   type GuestField,
   type PortalConfig,
   type TextElement,
 } from "@repo/portal";
 import type { DeepPartial } from "ai";
 import { z } from "zod";
+import { placedBackgroundImage } from "./images";
 
 // Loose types with descriptions so every gateway model accepts the schema, while the merge enforces the real limits
 const hex = z.string().describe("Hex colour like #1c1917");
@@ -40,7 +46,7 @@ export const generatedDesignSchema = z.object({
   background: z.object({
     type: z
       .enum(["color", "image"])
-      .describe("Use image only when the page already has a background image"),
+      .describe("Use image only when the page has a background image"),
     color: hex,
   }),
   fields: z
@@ -77,6 +83,20 @@ export type GeneratedDesign = z.infer<typeof generatedDesignSchema>;
 export const CHAT_MESSAGE_MAX = 1000;
 export const CHAT_HISTORY_MAX = 20;
 
+/** Brand details the customer supplied, from their website or uploaded images, for the agent to theme around. */
+export const brandContextSchema = z.object({
+  name: z.string().trim().min(1).max(BRAND_NAME_MAX).optional(),
+  description: z.string().trim().min(1).max(BRAND_DESCRIPTION_MAX).optional(),
+  sourceUrl: z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .optional(),
+  colors: z.array(colorSchema).max(BRAND_COLORS_MAX),
+  hasLogo: z.boolean(),
+});
+
+export type BrandContext = z.infer<typeof brandContextSchema>;
+
 export const designRequestSchema = z.object({
   messages: z
     .array(
@@ -89,6 +109,7 @@ export const designRequestSchema = z.object({
     .max(CHAT_HISTORY_MAX),
   design: generatedDesignSchema,
   hasBackgroundImage: z.boolean(),
+  brand: brandContextSchema.optional(),
 });
 
 export type DesignRequest = z.infer<typeof designRequestSchema>;
@@ -126,6 +147,50 @@ export const examplePrompts = [
       "Moody page for a rooftop pop-up bar. Dark charcoal with gold accents, short playful tagline, ask for email only.",
   },
 ] as const;
+
+/** Images the customer brought for the agent to design around. */
+export interface DesignAssets {
+  logo?: string;
+  background?: {
+    src: string;
+    recommended: BackgroundPositionRecommendation | null;
+  };
+}
+
+/** A chat turn that starts a design from the customer's own brand. */
+export interface DesignStart {
+  text: string;
+  brand?: BrandContext;
+  assets?: DesignAssets;
+}
+
+/** Places a customer's logo and background image on a config, so the agent's reply lands on top of them. */
+export function withAssets(
+  config: PortalConfig,
+  { logo, background }: DesignAssets = {},
+): PortalConfig {
+  const current = config.branding.logo;
+  return {
+    ...config,
+    branding: logo
+      ? {
+          ...config.branding,
+          logo: { ...current, src: logo, alt: current?.alt ?? "Logo" },
+        }
+      : config.branding,
+    background: background
+      ? {
+          ...config.background,
+          type: "image",
+          image: placedBackgroundImage(
+            config.background.image,
+            background.src,
+            background.recommended,
+          ),
+        }
+      : config.background,
+  };
+}
 
 /** The agent's view of a config, without image sources, ids it can't use or device overrides. */
 export function toGeneratedDesign(config: PortalConfig): GeneratedDesign {
@@ -253,7 +318,7 @@ function mergeBackground(
   partial: DeepPartial<GeneratedDesign["background"]> | undefined,
 ): PortalConfig["background"] {
   const current = base.background;
-  // The agent can't supply an image, so it can only show one the page already has
+  // The agent can't supply an image, so it can only show one already on the page, uploaded or imported before the request
   const type =
     partial?.type === "image" && !current.image
       ? "color"

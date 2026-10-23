@@ -72,9 +72,13 @@ export function useBrandImport(onBrand: (brand: BrandProfile) => void) {
 export function WebsiteUrlForm({
   importer,
   onSubmit,
+  submitLabel = "Generate designs",
+  disabled = false,
 }: {
   importer: ReturnType<typeof useBrandImport>;
   onSubmit: (href: string) => void;
+  submitLabel?: string;
+  disabled?: boolean;
 }) {
   const { pending, error, setError } = importer;
   const [url, setUrl] = useState("");
@@ -83,6 +87,7 @@ export function WebsiteUrlForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (disabled) return;
     const parsed = websiteUrlSchema.safeParse(url);
     if (parsed.success) onSubmit(parsed.data.href);
     else setError(parsed.error.issues[0]?.message ?? GENERIC_ERROR);
@@ -109,14 +114,14 @@ export function WebsiteUrlForm({
           }
         }}
       />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending || disabled}>
         {pending ? (
           <>
             <LoaderCircle className="animate-spin" aria-hidden />
             Generating…
           </>
         ) : (
-          "Generate designs"
+          submitLabel
         )}
       </Button>
       <p
