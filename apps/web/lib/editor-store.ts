@@ -49,12 +49,15 @@ export interface PortalEditorState extends HistoryEntry {
   deviceMode: Device;
   canvasMode: CanvasMode;
   selectedElementId: string | null;
+  saved: HistoryEntry;
   repositioning: boolean;
   // The latest import while the customer is choosing a design, kept out of history because it never changes the design
   brandDraft: BrandProfile | null;
 }
 
 interface PortalEditorActions {
+  loadDesign: (design: HistoryEntry) => void;
+  markSaved: (entry: HistoryEntry) => void;
   setTemplate: (id: TemplateId) => void;
   applyBrandedDesign: (templateId: TemplateId, brand: BrandProfile) => void;
   setBrandDraft: (brand: BrandProfile | null) => void;
@@ -130,6 +133,11 @@ export const initialEditorState: PortalEditorState = {
   deviceMode: "desktop",
   canvasMode: "edit",
   selectedElementId: null,
+  saved: {
+    config: templates.minimal.config,
+    templateId: "minimal",
+    brand: null,
+  },
   repositioning: false,
   brandDraft: null,
 };
@@ -245,6 +253,11 @@ function isUnchanged(state: HistoryEntry, next: Partial<HistoryEntry>) {
   );
 }
 
+// Compares by value so undoing back to the last save clears the flag
+export function hasUnsavedChanges(state: PortalEditorState) {
+  return !isUnchanged(state.saved, historyEntry(state));
+}
+
 export function isAtTemplateDefaults(state: PortalEditorState) {
   return isDeepEqual(
     state.config,
@@ -341,6 +354,23 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
 
   return {
     ...initialEditorState,
+
+    // History starts fresh so undo can never jump back into another design
+    loadDesign: ({ config, templateId, brand }) =>
+      setState({
+        config,
+        templateId,
+        brand,
+        past: [],
+        future: [],
+        selectedElementId: null,
+        repositioning: false,
+        brandDraft: null,
+        saved: { config, templateId, brand },
+      }),
+
+    // Takes what was sent to the repository, since edits made while saving are still unsaved
+    markSaved: (saved) => setState({ saved }),
 
     setTemplate: (id) =>
       set((state) => {
