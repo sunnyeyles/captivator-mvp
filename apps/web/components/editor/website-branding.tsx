@@ -7,7 +7,10 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { analyseBrandImage } from "@/lib/background-analysis";
+import {
+  analyseBrandImage,
+  preloadBackgroundAnalysis,
+} from "@/lib/background-analysis";
 import { reusableBrand, usePortalEditorStore } from "@/lib/editor-store";
 import { websiteUrlSchema } from "@/lib/website-url";
 import { BrandDesignChooser } from "./brand-design-chooser";
@@ -42,6 +45,7 @@ export function WebsiteBranding() {
     request.current = controller;
     setError(null);
     setPending(true);
+    preloadBackgroundAnalysis();
     try {
       const response = await fetch("/api/brand-import", {
         method: "POST",

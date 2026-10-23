@@ -77,6 +77,12 @@ export async function analyseBackgroundImage(
   }
 }
 
+/** Starts downloading the analysis library early so it overlaps a wait that comes before the analysis. */
+export function preloadBackgroundAnalysis() {
+  // The analysis itself reports a failed load, so an early failure here needs no handling
+  import("smartcrop").catch(() => {});
+}
+
 /** Analyses an image and wraps it in a new object URL, ready for placing as the background. */
 export async function prepareBackgroundImage(image: Blob): Promise<{
   src: string;
