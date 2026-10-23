@@ -11,13 +11,13 @@ A visual Wi-Fi splash page builder that enables customers to create and customis
 
 Users can start from professionally designed templates, upload branding assets, customise text and colours, configure guest information fields, and edit their splash page visually.
 
-The editor supports two design modes: **Desktop** and **Mobile**. Users can switch between these modes while creating their splash page, view the corresponding layout, and make changes directly in either mode.
+The editor supports three design modes: **Desktop**, **Tablet** and **Mobile**. Users can switch between these modes while creating their splash page, view the corresponding layout, and make changes directly in any mode.
 
 The product should provide an intuitive WYSIWYG experience for non-technical customers.
 
 ### Objectives
 
-- Provide a visual splash page editor with desktop and mobile editing modes.
+- Provide a visual splash page editor with desktop, tablet and mobile editing modes.
 - Include reusable, customisable templates.
 - Support customer logos, images, backgrounds, colours and text.
 - Allow configuration of up to two guest input fields.
@@ -117,7 +117,7 @@ The editor contains three main areas.
 
 - Application identity
 - Template selection
-- Desktop/Mobile mode switcher
+- Desktop/Tablet/Mobile mode switcher
 - Optional reset, undo and redo controls
 
 ### Properties Sidebar
@@ -137,19 +137,19 @@ The canvas displays the active device layout and responds immediately to configu
 
 Users can select elements in the canvas and modify them using the properties sidebar.
 
-The canvas must support both desktop and mobile editing modes.
+The canvas must support desktop, tablet and mobile editing modes.
 
-## 6. Desktop and Mobile Editing
+## 6. Desktop, Tablet and Mobile Editing
 
 ### 6.1 Device Mode Switcher
 
 Provide a clearly visible segmented control in the editor toolbar:
 
-**Desktop | Mobile**
+**Desktop | Tablet | Mobile**
 
 Switching modes changes the canvas dimensions and renders the corresponding responsive layout.
 
-Users can edit their splash page in either mode.
+Users can edit their splash page in any mode.
 
 ### 6.2 Desktop Editing Mode
 
@@ -182,38 +182,46 @@ Users can:
 
 The mobile canvas should accurately represent a typical phone viewport.
 
-### 6.4 Shared Configuration
+### 6.4 Tablet Editing Mode
 
-Desktop and mobile modes operate on the same underlying portal configuration.
+Tablet mode displays a portrait tablet-sized splash page canvas (820 × 1180).
 
-Changes to shared properties, including text content, colours, images and field selection, are reflected in both modes.
+Users can perform all supported editing operations, select elements directly in the tablet canvas and review the layout between the phone and desktop sizes.
+
+### 6.5 Shared Configuration
+
+Desktop, tablet and mobile modes operate on the same underlying portal configuration.
+
+Changes to shared properties, including text content, colours, images and field selection, are reflected in every mode.
 
 Responsive layout rules determine how the configuration appears at each viewport size.
 
-### 6.5 Device-Specific Overrides
+### 6.6 Device-Specific Overrides
 
-The configuration architecture should allow optional device-specific styling.
+The configuration architecture allows optional device-specific styling. Each element can override these properties for desktop, tablet or mobile:
 
-Potential overrides include:
+| Element | Overridable properties |
+| --- | --- |
+| Text | Font size, text alignment, space above |
+| Guest field | Width (% of the form column), space above |
+| Connect button | Width (% of the form column), space above |
+| Logo | Maximum height, space above |
 
-- Font size
-- Text alignment
-- Image positioning
-- Spacing
-- Element width
-- Layout arrangement
+Space above adds to the device layout's own spacing between elements. Each override is validated against the same range as its shared value.
 
-Overrides should be explicit rather than automatically creating separate desktop and mobile designs.
+Image positioning and layout arrangement remain possible future overrides.
+
+Overrides should be explicit rather than automatically creating separate designs for each device. In the sidebar, the user chooses to override a property for the active device, sees which properties are overridden, and can clear an override back to the shared value. Templates may ship their own overrides, and switching template replaces any existing overrides with the template's.
 
 When no override exists, the shared configuration is used.
 
-### 6.6 Editing Versus Preview
+### 6.7 Editing Versus Preview
 
 **Editing mode:** Users can select elements and modify their properties while viewing the selected device layout.
 
 **Preview mode:** Users see the resulting splash page without editor selection indicators or editing controls inside the canvas.
 
-Both modes should support desktop and mobile viewports.
+Both modes should support desktop, tablet and mobile viewports.
 
 ## 7. Template System
 
@@ -227,7 +235,7 @@ Templates are included in the MVP.
 - Load template settings into Zustand.
 - Support editing after selection.
 - Render templates through the shared portal renderer.
-- Ensure templates support both desktop and mobile layouts.
+- Ensure templates support desktop, tablet and mobile layouts.
 
 ### Initial Templates
 
@@ -259,7 +267,7 @@ Zustand manages the active splash page configuration and editor interface state.
 ### Example Store Interface
 
 ```ts
-type DeviceMode = "desktop" | "mobile";
+type DeviceMode = "desktop" | "tablet" | "mobile";
 type CanvasMode = "edit" | "preview";
 
 interface PortalEditorStore {
@@ -310,10 +318,11 @@ Editor Controls / Canvas Interaction
                 v
        Responsive Renderer
                 |
-         +------+------+
-         |             |
-         v             v
-    Desktop View    Mobile View
+         +-------+-------+
+         |       |       |
+         v       v       v
+    Desktop   Tablet   Mobile
+     View      View     View
 ```
 
 Switching device modes must not discard configuration changes.
@@ -375,7 +384,7 @@ Requirements:
 - Zero, one or two active fields
 - Selection and replacement of field types
 - Removal of fields
-- Immediate updates in both device modes
+- Immediate updates in every device mode
 - Maximum of two active fields
 
 Optional settings include labels, placeholders, field order and required status.
@@ -411,7 +420,7 @@ The renderer converts portal configuration into a responsive splash page.
 - Display uploaded images.
 - Render text and fields.
 - Apply button styles.
-- Adapt layouts to desktop and mobile.
+- Adapt layouts to desktop, tablet and mobile.
 - Apply device-specific overrides where defined.
 - Support editing and preview presentation.
 
@@ -420,7 +429,7 @@ The renderer converts portal configuration into a responsive splash page.
 ```tsx
 interface SplashPageProps {
   config: PortalConfig;
-  device: "desktop" | "mobile";
+  device: "desktop" | "tablet" | "mobile";
   mode: "edit" | "preview" | "published";
 }
 
@@ -520,7 +529,7 @@ Passwordless Login
 Splash Page Editor
        |
        +--- Templates
-       +--- Desktop / Mobile Editing
+       +--- Desktop / Tablet / Mobile Editing
        +--- Branding / AI
        +--- Zustand Configuration
        |
@@ -573,15 +582,17 @@ The editor and renderer should remain independent of authentication, rental mana
 - [ ] Users can configure up to two guest input fields.
 - [ ] Users can customise Connect button background and text colours.
 
-### Desktop and Mobile Editing
+### Desktop, Tablet and Mobile Editing
 
 - [ ] Desktop editing mode is available.
+- [ ] Tablet editing mode is available.
 - [ ] Mobile editing mode is available.
 - [ ] Users can switch between device modes.
-- [ ] Both modes support the full editing workflow.
-- [ ] Users can select elements within either canvas.
+- [ ] Every mode supports the full editing workflow.
+- [ ] Users can select elements within any canvas.
 - [ ] Changes update immediately.
-- [ ] Shared changes appear in both device modes.
+- [ ] Shared changes appear in every device mode.
+- [ ] Device-specific overrides are explicit, marked and clearable.
 - [ ] Responsive layouts adapt to each viewport.
 - [ ] Switching modes preserves edits.
 - [ ] Preview-only presentation is available without editing indicators.
