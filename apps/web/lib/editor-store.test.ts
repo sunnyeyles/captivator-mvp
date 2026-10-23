@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GESTURE_IDLE_MS,
+  hasUnsavedChanges,
   HISTORY_LIMIT,
   initialEditorState,
   isAtTemplateDefaults,
@@ -575,7 +576,10 @@ describe("no-op edits", () => {
     ["updateButton", () => getState().updateButton({})],
     ["updateBackground", () => getState().updateBackground({ type: "color" })],
     ["updateBranding", () => getState().updateBranding({})],
-    ["setTemplate to the current template", () => getState().setTemplate("minimal")],
+    [
+      "setTemplate to the current template",
+      () => getState().setTemplate("minimal"),
+    ],
   ])("%s leaves the config and history untouched", (_name, edit) => {
     const { config } = getState();
     edit();
@@ -967,5 +971,91 @@ describe("layout overrides on fields, the button and the logo", () => {
     expect(getState().config.texts[0]!.overrides).toEqual({
       mobile: { fontSize: 40 },
     });
+  });
+});
+
+describe("loading a design", () => {
+  it("replaces the design and starts undo history fresh", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().updateBackground({ color: "#16a34a" });
+    getState().undo();
+    getState().selectElement("welcome-heading");
+
+    getState().loadDesign({
+      config: templates.event.config,
+      templateId: "event",
+    });
+
+    expect(getState().config).toBe(templates.event.config);
+    expect(getState().templateId).toBe("event");
+    expect(getState().past).toEqual([]);
+    expect(getState().future).toEqual([]);
+    expect(getState().selectedElementId).toBeNull();
+    expect(getState().saved).toEqual({
+      config: templates.event.config,
+      templateId: "event",
+    });
+    expect(hasUnsavedChanges(getState())).toBe(false);
+  });
+
+  it("never undoes back into the previous design", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().loadDesign({
+      config: templates.corporate.config,
+      templateId: "corporate",
+    });
+
+    getState().undo();
+
+    expect(getState().config).toBe(templates.corporate.config);
+  });
+});
+
+describe("unsaved changes", () => {
+  beforeEach(() => {
+    getState().loadDesign({
+      config: templates.minimal.config,
+      templateId: "minimal",
+    });
+  });
+
+  it("turns on after an edit", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+
+    expect(hasUnsavedChanges(getState())).toBe(true);
+  });
+
+  it("turns on after a template change", () => {
+    getState().setTemplate("event");
+
+    expect(hasUnsavedChanges(getState())).toBe(true);
+  });
+
+  it("turns off after undoing back to the saved state", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().undo();
+
+    expect(hasUnsavedChanges(getState())).toBe(false);
+  });
+
+  it("turns off once the current state is marked saved", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    const { config, templateId } = getState();
+    getState().markSaved({ config, templateId });
+
+    expect(hasUnsavedChanges(getState())).toBe(false);
+
+    getState().undo();
+    expect(hasUnsavedChanges(getState())).toBe(true);
+  });
+
+  it("stays on for edits made after the saved snapshot was taken", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    const { config, templateId } = getState();
+    pause();
+    getState().updateBackground({ color: "#16a34a" });
+    getState().markSaved({ config, templateId });
+
+    expect(hasUnsavedChanges(getState())).toBe(true);
   });
 });

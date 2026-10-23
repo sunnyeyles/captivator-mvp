@@ -465,11 +465,25 @@ All templates should conform to the same configuration schema.
 
 ## 15. Optional Product Enhancements
 
-### Local Persistence
+### Designs
 
-Save configuration locally so users can resume editing.
+Users keep a library of named designs, each a saved portal configuration and template. The library at `/` lists them as cards with a rendered thumbnail, last edited time, status and a menu with Rename, Duplicate, Publish / Take offline and Delete. New designs start from a template and are named after it.
 
-Uploaded assets require an appropriate persistence strategy such as IndexedDB or external storage.
+Each design opens in the editor at `/designs/[id]`. Saving is explicit (Save button or ⌘S/Ctrl+S), and the toolbar shows "Unsaved changes" whenever the editor differs from the last save. Leaving with unsaved changes asks for confirmation. Device mode, canvas mode and selection are never saved.
+
+All persistence goes through one async `DesignRepository` interface. The demo implements it with localStorage and fake latency, inlining uploaded images as data URLs on save. A real backend replaces this implementation without changing the UI.
+
+### Publish and Live
+
+Publishing freezes a snapshot of a design's saved configuration as the single live page. Later edits don't reach guests until the design is published again.
+
+- At most one design is live. Publishing replaces the live design, after a confirmation naming both designs. A first publish and republishing the live design need no confirmation.
+- Publishing from the editor saves unsaved changes first.
+- Take offline clears the live page, after a confirmation.
+- The live design can't be deleted until it's taken offline.
+- Each design shows a status: Draft, Live, or "Live · unpublished changes" when its saved configuration differs from the snapshot.
+
+`/live` renders the snapshot with `SplashPage` in `published` mode, as a guest would see it, and never makes a network connection. When nothing is live it says so and links back to the library.
 
 ### Undo and Redo
 

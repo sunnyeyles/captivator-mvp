@@ -40,9 +40,12 @@ export interface PortalEditorState extends HistoryEntry {
   deviceMode: Device;
   canvasMode: CanvasMode;
   selectedElementId: string | null;
+  saved: HistoryEntry;
 }
 
 interface PortalEditorActions {
+  loadDesign: (design: HistoryEntry) => void;
+  markSaved: (entry: HistoryEntry) => void;
   setTemplate: (id: TemplateId) => void;
   reset: () => void;
   undo: () => void;
@@ -104,6 +107,10 @@ export const initialEditorState: PortalEditorState = {
   deviceMode: "desktop",
   canvasMode: "edit",
   selectedElementId: null,
+  saved: {
+    config: templates.minimal.config,
+    templateId: "minimal",
+  },
 };
 
 function nextId(prefix: string, items: { id: string }[]) {
@@ -193,6 +200,11 @@ function isUnchanged(state: HistoryEntry, next: Partial<HistoryEntry>) {
   );
 }
 
+// Compares by value so undoing back to the last save clears the flag
+export function hasUnsavedChanges(state: PortalEditorState) {
+  return !isUnchanged(state.saved, historyEntry(state));
+}
+
 export function isAtTemplateDefaults(state: PortalEditorState) {
   return isDeepEqual(state.config, templates[state.templateId].config);
 }
@@ -275,6 +287,20 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
 
   return {
     ...initialEditorState,
+
+    // History starts fresh so undo can never jump back into another design
+    loadDesign: ({ config, templateId }) =>
+      setState({
+        config,
+        templateId,
+        past: [],
+        future: [],
+        selectedElementId: null,
+        saved: { config, templateId },
+      }),
+
+    // Takes what was sent to the repository, since edits made while saving are still unsaved
+    markSaved: (saved) => setState({ saved }),
 
     setTemplate: (id) =>
       set((state) => {
