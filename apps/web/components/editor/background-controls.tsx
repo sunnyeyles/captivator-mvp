@@ -5,13 +5,14 @@ import {
   type BackgroundImage,
   type PortalConfig,
 } from "@repo/portal";
-import { Move, RotateCcw } from "lucide-react";
-import { useId } from "react";
+import { LoaderCircle, Move, RotateCcw } from "lucide-react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { prepareBackgroundImage } from "@/lib/background-analysis";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { BackgroundColorControl } from "./background-color-control";
 import { ColorField } from "./color-field";
@@ -198,6 +199,31 @@ export function BackgroundControls() {
     (state) => state.placeBackgroundImage,
   );
   const image = background.image;
+  const latestUpload = useRef(0);
+  const [analysing, setAnalysing] = useState(false);
+  const [centredSrc, setCentredSrc] = useState<string | null>(null);
+  // Compared by src so undo past the upload, or redo back to it, hides and shows the note with the image
+  const showCentredNote = image !== null && image.src === centredSrc;
+
+  async function uploadImage(file: File) {
+    const upload = ++latestUpload.current;
+    setAnalysing(true);
+    const { src, recommended } = await prepareBackgroundImage(file);
+    // A newer upload or a removal superseded this one, so its URL never reaches the store
+    if (upload !== latestUpload.current) {
+      URL.revokeObjectURL(src);
+      return;
+    }
+    setAnalysing(false);
+    setCentredSrc(recommended ? null : src);
+    placeBackgroundImage(src, recommended);
+  }
+
+  function removeImage() {
+    latestUpload.current += 1;
+    setAnalysing(false);
+    updateBackground({ image: null });
+  }
 
   function updateImage(changes: Partial<BackgroundImage>) {
     if (image) updateBackground({ image: { ...image, ...changes } });
@@ -217,9 +243,24 @@ export function BackgroundControls() {
           <ImageUploadField
             label="Background image"
             src={image?.src ?? null}
-            // TODO(.scratch/smart-crop/issues/02-smartcrop-recommendations.md): pass the analysed recommendation
-            onUpload={(src) => placeBackgroundImage(src, null)}
-            onRemove={() => updateBackground({ image: null })}
+            onUpload={uploadImage}
+            onRemove={removeImage}
+            status={
+              analysing ? (
+                <p
+                  role="status"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <LoaderCircle className="size-3 animate-spin" aria-hidden />
+                  Finding the best crop…
+                </p>
+              ) : showCentredNote ? (
+                <p className="text-xs text-muted-foreground">
+                  Couldn&apos;t find the subject automatically, so the image is
+                  centred. Use Reposition to adjust it.
+                </p>
+              ) : undefined
+            }
           />
           {image ? (
             <>

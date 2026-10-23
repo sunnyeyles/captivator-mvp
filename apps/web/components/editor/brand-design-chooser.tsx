@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { frameSizes } from "@/components/preview/design-canvas";
+import { deviceFrames } from "@/lib/device-frames";
 import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
 import { DeviceToggle } from "./device-mode-switcher";
@@ -67,7 +67,7 @@ function DesignPreview({
   device: Device;
   id: (typeof templateIds)[number];
 }) {
-  const frame = frameSizes[device];
+  const frame = deviceFrames[device];
   const scale = Math.min(
     PREVIEW_BOX.width / frame.width,
     PREVIEW_BOX.height / frame.height,
