@@ -42,7 +42,7 @@ function ElementRow({
   children?: ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-1">
+    <li className="flex min-w-0 items-center gap-1">
       <Button
         variant="ghost"
         size="sm"
@@ -71,9 +71,9 @@ export function ElementList() {
   const isFull = fields.length >= MAX_GUEST_FIELDS;
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       {hasLogo ? null : <LogoControls />}
-      <ul className="grid gap-1">
+      <ul className="grid min-w-0 gap-1">
         {hasLogo ? (
           <ElementRow
             icon={Image}
