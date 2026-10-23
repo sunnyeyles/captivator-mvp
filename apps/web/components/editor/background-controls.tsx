@@ -7,11 +7,11 @@ import {
 } from "@repo/portal";
 import { LoaderCircle, Move, RotateCcw } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@repo/ui/button";
+import { Label } from "@repo/ui/label";
+import { Slider } from "@repo/ui/slider";
+import { Switch } from "@repo/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { prepareBackgroundImage } from "@/lib/background-analysis";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { BackgroundColorControl } from "./background-color-control";

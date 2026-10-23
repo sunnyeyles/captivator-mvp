@@ -16,8 +16,8 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@repo/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
 const guestFieldIcons: Record<GuestFieldType, LucideIcon> = {

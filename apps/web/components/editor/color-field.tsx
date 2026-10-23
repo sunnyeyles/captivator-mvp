@@ -2,8 +2,8 @@
 
 import { colorSchema } from "@repo/portal";
 import { useId, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 
 // The native colour picker only accepts the six-digit form
 function toSixDigitHex(color: string) {

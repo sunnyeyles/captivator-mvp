@@ -2,8 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Tailwind skips workspace packages unless told, and the portal renderer uses utilities */
+/* Tailwind skips workspace packages unless told, and the portal renderer and UI primitives use utilities */
 @source "../../../packages/portal/src";
+@source "../../../packages/ui/src";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -2,8 +2,8 @@
 
 import { X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@repo/ui/button";
+import { Separator } from "@repo/ui/separator";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import {
   findSelectedElement,

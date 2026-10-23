@@ -6,7 +6,7 @@ import {
   ReplaceLiveDialog,
   TakeOfflineDialog,
 } from "@/components/designs/publish-dialogs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { designRepository, designStatus } from "@/lib/designs";
 import { hasUnsavedChanges, usePortalEditorStore } from "@/lib/editor-store";
 

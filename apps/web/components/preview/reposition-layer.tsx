@@ -7,7 +7,7 @@ import {
   type Device,
 } from "@repo/portal";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import {
   dragPosition,
   nudgePosition,

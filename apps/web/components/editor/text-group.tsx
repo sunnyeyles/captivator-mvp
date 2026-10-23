@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Type } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
 export function TextGroup() {

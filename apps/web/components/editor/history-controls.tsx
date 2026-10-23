@@ -2,7 +2,7 @@
 
 import { Redo2, RotateCcw, Undo2 } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
 
 function isEditable(target: EventTarget | null) {

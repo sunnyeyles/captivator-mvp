@@ -4,7 +4,7 @@ import { SplashPage, type Device } from "@repo/portal";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@repo/ui/button";
 import { designRepository, type LiveDesign } from "@/lib/designs";
 
 function viewportDevice(): Device {

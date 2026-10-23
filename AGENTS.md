@@ -11,7 +11,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ## Project
 
-A visual Wi-Fi splash page (captive portal) builder. `docs/MVP_SPEC.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, shadcn/ui, Zustand and Lucide in `apps/web`, Zod in `packages/portal`, plus Vitest for tests. `packages/ui` still holds the starter's stub components.
+A visual Wi-Fi splash page (captive portal) builder. `docs/MVP_SPEC.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, Zustand and Lucide in `apps/web`, shadcn/ui in `packages/ui`, Zod in `packages/portal`, plus Vitest for tests. `packages/ui` also still holds the starter's stub `card` and `code` components.
 
 ## Commands
 
@@ -29,9 +29,9 @@ Before calling a change done, run `lint`, `check-types` and `test` for every wor
 
 ## Architecture (from docs/MVP_SPEC.md)
 
-- `apps/web`: editor shell (toolbar, properties sidebar, design canvas), the Zustand store, and for now the shadcn/ui components (`components/ui`) and editor theme tokens (`app/globals.css`)
+- `apps/web`: editor shell (toolbar, properties sidebar, design canvas), the Zustand store, and for now the editor theme tokens (`app/globals.css`)
 - `packages/portal`: portal config schema (Zod), defaults, templates and the `SplashPage` renderer
-- `packages/ui`: where shadcn/ui components and theme tokens move once a second workspace needs them
+- `packages/ui`: the shadcn/ui primitives, imported as `@repo/ui/<component>`; theme tokens move here once a second workspace needs them
 
 Code used by one app lives in that app. Move it into a package once a second workspace needs it, and import other workspaces by package name, never by relative path.
 
