@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { analyseBrandImage } from "@/lib/background-analysis";
 import { reusableBrand, usePortalEditorStore } from "@/lib/editor-store";
 import { websiteUrlSchema } from "@/lib/website-url";
 import { BrandDesignChooser } from "./brand-design-chooser";
@@ -52,7 +53,11 @@ export function WebsiteBranding() {
       if (controller.signal.aborted) return;
       if (!result.success) setError(GENERIC_ERROR);
       else if ("error" in result.data) setError(result.data.error.message);
-      else openDesigns(result.data.brand);
+      else {
+        const brand = await analyseBrandImage(result.data.brand);
+        // A newer import, refresh or reuse aborted this one, so its analysis must not replace the newer draft
+        if (!controller.signal.aborted) openDesigns(brand);
+      }
     } catch {
       // A request replaced by a newer submit ends quietly
       if (!controller.signal.aborted) setError(GENERIC_ERROR);

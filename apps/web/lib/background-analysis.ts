@@ -1,6 +1,7 @@
 import type {
   BackgroundPosition,
   BackgroundPositionRecommendation,
+  BrandProfile,
   Device,
 } from "@repo/portal";
 import { cropPosition, type Size } from "./background-geometry";
@@ -83,4 +84,18 @@ export async function prepareBackgroundImage(image: Blob): Promise<{
 }> {
   const recommended = await analyseBackgroundImage(image);
   return { src: URL.createObjectURL(image), recommended };
+}
+
+/** Adds an imported brand's background recommendation, analysed from its data URL image, or null when it can't be analysed. */
+export async function analyseBrandImage(
+  brand: BrandProfile,
+): Promise<BrandProfile> {
+  if (!brand.image) return { ...brand, imageRecommended: null };
+  try {
+    // Fetching a data URL decodes it locally, so the image never needs an object URL
+    const image = await (await fetch(brand.image)).blob();
+    return { ...brand, imageRecommended: await analyseBackgroundImage(image) };
+  } catch {
+    return { ...brand, imageRecommended: null };
+  }
 }
