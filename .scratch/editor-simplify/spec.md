@@ -1,6 +1,6 @@
 # Editor simplification
 
-Status: done
+**Status:** done
 
 ## Problem Statement
 

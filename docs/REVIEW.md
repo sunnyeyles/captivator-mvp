@@ -47,7 +47,7 @@ The editor's colours are design tokens in [`apps/web/app/globals.css`](../apps/w
 
 I set the repo up so coding agents have the context they need without being told each time:
 
-- [`AGENTS.md`](../AGENTS.md) holds the rules, commands and architecture, plus the spec in [`docs/MVP_SPEC.md`](MVP_SPEC.md) and feature specs in [`.scratch/`](../.scratch/).
+- [`AGENTS.md`](../AGENTS.md) holds the rules, commands and architecture, plus the product spec in [`.scratch/editor/spec.md`](../.scratch/editor/spec.md) beside the feature specs in [`.scratch/`](../.scratch/).
 - Skills in `.agents/skills/` cover test-driven development, module design, React best practices and PR writing.
 - An agent must pass `lint`, `check-types` and `test` before a change counts as done. Custom lint rules check the comment style, imports between packages and no hard-coded colours.
 - Hooks stop an agent writing long comments or reading huge generated files.
