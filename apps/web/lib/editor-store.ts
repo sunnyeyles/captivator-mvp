@@ -25,25 +25,24 @@ import {
   type GuestField,
   type Logo,
   type PortalConfig,
+  type RenderMode,
   type StyleOverride,
   type TemplateId,
   type TextElement,
 } from "@repo/portal";
+import type { z } from "zod";
 import { create } from "zustand";
-import { isDeepEqual } from "./equal";
+import type { DesignContent } from "./designs";
+import { isDeepEqual, isPlainRecord } from "./equal";
 import { revokeUnreachableImageUrls } from "./images";
 import { findSelectedElement } from "./selected-element";
 
-export type CanvasMode = "edit" | "preview";
+type CanvasMode = Exclude<RenderMode, "published">;
 
 // Only the design is history, so undo never changes device, canvas mode or selection
-export interface HistoryEntry {
-  config: PortalConfig;
-  templateId: TemplateId;
-  brand: BrandProfile | null;
-}
+type HistoryEntry = DesignContent;
 
-export interface PortalEditorState extends HistoryEntry {
+interface PortalEditorState extends HistoryEntry {
   past: HistoryEntry[];
   future: HistoryEntry[];
   deviceMode: Device;
@@ -92,7 +91,7 @@ interface PortalEditorActions {
   setRepositioning: (on: boolean) => void;
 }
 
-export type PortalEditorStore = PortalEditorState & PortalEditorActions;
+type PortalEditorStore = PortalEditorState & PortalEditorActions;
 
 export const HISTORY_LIMIT = 100;
 
@@ -131,7 +130,17 @@ function withFields(state: PortalEditorState, fields: GuestField[]) {
   return { ...state.config, fields: parsed.data };
 }
 
-// The renderer trusts the config, so a text edit only lands if the result still passes the schema
+// The renderer trusts the config, so an edit only lands if the result still passes the schema
+function parsedInto<T>(
+  state: PortalEditorState,
+  schema: z.ZodType<T>,
+  value: unknown,
+  put: (parsed: T) => PortalConfig,
+): Partial<PortalEditorState> {
+  const parsed = schema.safeParse(value);
+  return parsed.success ? { config: put(parsed.data) } : state;
+}
+
 function replaceText(
   state: PortalEditorState,
   id: string,
@@ -139,16 +148,10 @@ function replaceText(
 ): Partial<PortalEditorState> {
   const current = state.config.texts.find((text) => text.id === id);
   if (!current) return state;
-  const parsed = textElementSchema.safeParse(edit(current));
-  if (!parsed.success) return state;
-  return {
-    config: {
-      ...state.config,
-      texts: state.config.texts.map((text) =>
-        text.id === id ? parsed.data : text,
-      ),
-    },
-  };
+  return parsedInto(state, textElementSchema, edit(current), (edited) => ({
+    ...state.config,
+    texts: state.config.texts.map((text) => (text.id === id ? edited : text)),
+  }));
 }
 
 function replaceField(
@@ -167,9 +170,15 @@ function replaceButton(
   state: PortalEditorState,
   edit: (current: ConnectButton) => unknown,
 ): Partial<PortalEditorState> {
-  const parsed = buttonSchema.safeParse(edit(state.config.button));
-  if (!parsed.success) return state;
-  return { config: { ...state.config, button: parsed.data } };
+  return parsedInto(
+    state,
+    buttonSchema,
+    edit(state.config.button),
+    (button) => ({
+      ...state.config,
+      button,
+    }),
+  );
 }
 
 function replaceLogo(
@@ -178,14 +187,10 @@ function replaceLogo(
 ): Partial<PortalEditorState> {
   const { logo } = state.config.branding;
   if (!logo) return state;
-  const parsed = logoSchema.safeParse(edit(logo));
-  if (!parsed.success) return state;
-  return {
-    config: {
-      ...state.config,
-      branding: { ...state.config.branding, logo: parsed.data },
-    },
-  };
+  return parsedInto(state, logoSchema, edit(logo), (edited) => ({
+    ...state.config,
+    branding: { ...state.config.branding, logo: edited },
+  }));
 }
 
 function replaceBackgroundImage(
@@ -194,18 +199,28 @@ function replaceBackgroundImage(
 ): Partial<PortalEditorState> {
   const { image } = state.config.background;
   if (!image) return state;
-  const parsed = backgroundImageSchema.safeParse(edit(image));
-  if (!parsed.success) return state;
-  return {
-    config: {
-      ...state.config,
-      background: { ...state.config.background, image: parsed.data },
-    },
-  };
+  return parsedInto(state, backgroundImageSchema, edit(image), (edited) => ({
+    ...state.config,
+    background: { ...state.config.background, image: edited },
+  }));
 }
 
 function keptSelection(config: PortalConfig, id: string | null) {
   return findSelectedElement(config, id) ? id : null;
+}
+
+function branded(
+  state: PortalEditorState,
+  templateId: TemplateId,
+  brand: BrandProfile | null,
+): Partial<PortalEditorState> {
+  const config = brandedConfig(templateId, brand);
+  return {
+    config,
+    templateId,
+    brand,
+    selectedElementId: keptSelection(config, state.selectedElementId),
+  };
 }
 
 function historyEntry(state: PortalEditorState): HistoryEntry {
@@ -253,10 +268,6 @@ export const GESTURE_IDLE_MS = 1000;
 
 function gestureKey(action: string, keys: string[], id = "") {
   return `${action}:${id}:${[...keys].sort().join()}`;
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 // Nested paths keep an image upload and a later fit or overlay tweak in separate undo steps
@@ -344,26 +355,10 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     // Takes what was sent to the repository, since edits made while saving are still unsaved
     markSaved: (saved) => setState({ saved }),
 
-    setTemplate: (id) =>
-      set((state) => {
-        const config = brandedConfig(id, state.brand);
-        return {
-          config,
-          templateId: id,
-          selectedElementId: keptSelection(config, state.selectedElementId),
-        };
-      }),
+    setTemplate: (id) => set((state) => branded(state, id, state.brand)),
 
     applyBrandedDesign: (templateId, brand) =>
-      set((state) => {
-        const config = brandedConfig(templateId, brand);
-        return {
-          config,
-          templateId,
-          brand,
-          selectedElementId: keptSelection(config, state.selectedElementId),
-        };
-      }),
+      set((state) => branded(state, templateId, brand)),
 
     setBrandDraft: (brandDraft) => set({ brandDraft }),
 
@@ -374,14 +369,7 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
           : state,
       ),
 
-    reset: () =>
-      set((state) => {
-        const config = brandedConfig(state.templateId, state.brand);
-        return {
-          config,
-          selectedElementId: keptSelection(config, state.selectedElementId),
-        };
-      }),
+    reset: () => set((state) => branded(state, state.templateId, state.brand)),
 
     undo: () =>
       setState((state) => {
@@ -463,11 +451,10 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
             ...changes,
           });
           if (!parsed.success) return state;
-          const logoRemoved =
-            !parsed.data.logo && state.selectedElementId === LOGO_ELEMENT_ID;
+          const config = { ...state.config, branding: parsed.data };
           return {
-            config: { ...state.config, branding: parsed.data },
-            selectedElementId: logoRemoved ? null : state.selectedElementId,
+            config,
+            selectedElementId: keptSelection(config, state.selectedElementId),
           };
         },
         gestureKey(
@@ -502,14 +489,16 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
       ),
 
     removeText: (id) =>
-      set((state) => ({
-        config: {
+      set((state) => {
+        const config = {
           ...state.config,
           texts: state.config.texts.filter((text) => text.id !== id),
-        },
-        selectedElementId:
-          state.selectedElementId === id ? null : state.selectedElementId,
-      })),
+        };
+        return {
+          config,
+          selectedElementId: keptSelection(config, state.selectedElementId),
+        };
+      }),
 
     addField: () =>
       set((state) => {
@@ -537,14 +526,16 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
       ),
 
     removeField: (id) =>
-      set((state) => ({
-        config: {
+      set((state) => {
+        const config = {
           ...state.config,
           fields: state.config.fields.filter((field) => field.id !== id),
-        },
-        selectedElementId:
-          state.selectedElementId === id ? null : state.selectedElementId,
-      })),
+        };
+        return {
+          config,
+          selectedElementId: keptSelection(config, state.selectedElementId),
+        };
+      }),
 
     moveField: (id, offset) =>
       set((state) => {

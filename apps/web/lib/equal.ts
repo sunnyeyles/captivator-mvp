@@ -2,6 +2,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+export function isPlainRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return isRecord(value) && !Array.isArray(value);
+}
+
 // Keys holding undefined count as absent, since schema parsing may add or drop them
 export function isDeepEqual(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;

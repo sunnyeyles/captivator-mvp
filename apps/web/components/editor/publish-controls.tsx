@@ -7,7 +7,11 @@ import {
   TakeOfflineDialog,
 } from "@/components/designs/publish-dialogs";
 import { Button } from "@repo/ui/button";
-import { designRepository, designStatus } from "@/lib/designs";
+import {
+  designRepository,
+  designStatus,
+  replacesOtherLive,
+} from "@/lib/designs";
 import { hasUnsavedChanges, usePortalEditorStore } from "@/lib/editor-store";
 
 export function PublishControls({
@@ -79,7 +83,7 @@ export function PublishControls({
         title={upToDate ? "This design is live and up to date" : undefined}
         disabled={upToDate || saving || pending !== null}
         onClick={() => {
-          if (live && live.designId !== design.id) setDialog("replace");
+          if (replacesOtherLive(design, live)) setDialog("replace");
           else publish();
         }}
       >

@@ -7,7 +7,7 @@ import { designRepository } from "@/lib/designs";
 import { hasUnsavedChanges, usePortalEditorStore } from "@/lib/editor-store";
 import { PublishControls } from "./publish-controls";
 
-export function useSaveDesign() {
+function useSaveDesign() {
   const { design, setDesign } = useCurrentDesign();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,15 +15,12 @@ export function useSaveDesign() {
   async function save() {
     const { config, templateId, brand, markSaved } =
       usePortalEditorStore.getState();
+    const content = { config, templateId, brand };
     setPending(true);
     setError(null);
     try {
-      const saved = await designRepository().save(design.id, {
-        config,
-        templateId,
-        brand,
-      });
-      markSaved({ config, templateId, brand });
+      const saved = await designRepository().save(design.id, content);
+      markSaved(content);
       setDesign(saved);
       return true;
     } catch (cause) {

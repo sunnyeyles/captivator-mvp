@@ -8,14 +8,39 @@ export function imageFileError(file: Pick<File, "type" | "size">) {
   return result.error?.issues[0]?.message ?? null;
 }
 
+export function isObjectUrl(src: string) {
+  return src.startsWith("blob:");
+}
+
+// Image slots are listed here and in imageSrcs below, so a new slot needs adding to both
+export async function mapImageSrcs(
+  config: PortalConfig,
+  map: (src: string) => string | Promise<string>,
+): Promise<PortalConfig> {
+  const { logo } = config.branding;
+  const { image } = config.background;
+  return {
+    ...config,
+    branding: {
+      ...config.branding,
+      logo: logo && { ...logo, src: await map(logo.src) },
+    },
+    background: {
+      ...config.background,
+      image: image && { ...image, src: await map(image.src) },
+    },
+  };
+}
+
+function imageSrcs(config: PortalConfig) {
+  return [config.branding.logo?.src, config.background.image?.src];
+}
+
 function objectUrlsIn(configs: PortalConfig[]) {
   const urls = new Set<string>();
   for (const config of configs) {
-    for (const src of [
-      config.branding.logo?.src,
-      config.background.image?.src,
-    ]) {
-      if (src?.startsWith("blob:")) urls.add(src);
+    for (const src of imageSrcs(config)) {
+      if (src && isObjectUrl(src)) urls.add(src);
     }
   }
   return urls;

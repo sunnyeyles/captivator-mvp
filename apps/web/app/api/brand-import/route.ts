@@ -7,6 +7,7 @@ import {
   type BrandImportErrorCode,
 } from "@/lib/brand-import";
 import type { SafeFetchDeps } from "@/lib/safe-fetch";
+import { INVALID_MESSAGE } from "@/lib/website-url";
 
 const requestSchema = z.object({ url: z.string() });
 
@@ -15,10 +16,7 @@ const errors: Record<
   BrandImportErrorCode,
   { status: number; message: string }
 > = {
-  invalid_url: {
-    status: 400,
-    message: "Enter a website address like yourbusiness.com",
-  },
+  invalid_url: { status: 400, message: INVALID_MESSAGE },
   blocked_url: {
     status: 422,
     message:

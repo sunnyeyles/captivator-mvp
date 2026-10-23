@@ -32,6 +32,7 @@ import { Label } from "@repo/ui/label";
 import {
   designRepository,
   designStatus,
+  replacesOtherLive,
   type Design,
   type LiveDesign,
 } from "@/lib/designs";
@@ -76,7 +77,7 @@ export function DesignCard({
   }
 
   function publish() {
-    if (live && live.designId !== design.id) {
+    if (replacesOtherLive(design, live)) {
       setDialog("replace");
       return;
     }

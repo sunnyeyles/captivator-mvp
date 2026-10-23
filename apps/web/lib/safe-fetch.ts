@@ -1,4 +1,5 @@
 import { BlockList, isIP } from "node:net";
+import { bareHost, isHttpUrl } from "./website-url";
 
 export interface LookupAddress {
   address: string;
@@ -39,7 +40,7 @@ export class SafeFetchError extends Error {
 
 export const MAX_REDIRECTS = 3;
 
-export const USER_AGENT = "CaptivatorBrandImport/1.0";
+const USER_AGENT = "CaptivatorBrandImport/1.0";
 
 const blockedAddresses = new BlockList();
 for (const [network, prefix] of [
@@ -80,7 +81,7 @@ for (const [network, prefix] of [
 
 /** Whether an address is outside the public internet, which includes anything that isn't a valid IP. */
 export function isBlockedAddress(address: string) {
-  const bare = address.replace(/^\[|\]$/g, "").replace(/%.*$/, "");
+  const bare = bareHost(address).replace(/%.*$/, "");
   const family = isIP(bare);
   if (family === 0) return true;
   return blockedAddresses.check(bare, family === 4 ? "ipv4" : "ipv6");
@@ -88,12 +89,12 @@ export function isBlockedAddress(address: string) {
 
 async function checkUrl(url: URL, deps: SafeFetchDeps) {
   const allowed =
-    (url.protocol === "http:" || url.protocol === "https:") &&
+    isHttpUrl(url) &&
     ["", "80", "443"].includes(url.port) &&
     !url.username &&
     !url.password;
   if (!allowed) throw new SafeFetchError("blocked");
-  const host = url.hostname.replace(/^\[|\]$/g, "");
+  const host = bareHost(url.hostname);
   if (isIP(host) !== 0) {
     if (isBlockedAddress(host)) throw new SafeFetchError("blocked");
     return;
