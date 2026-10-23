@@ -25,7 +25,7 @@ let repository: LocalStorageDesignRepository;
 
 beforeEach(() => {
   storage = memoryStorage();
-  repository = new LocalStorageDesignRepository(storage, 0);
+  repository = new LocalStorageDesignRepository(storage);
 });
 
 describe("LocalStorageDesignRepository", () => {
@@ -77,7 +77,7 @@ describe("LocalStorageDesignRepository", () => {
   it("keeps designs across instances on the same storage", async () => {
     const design = await repository.create("event", "Event");
 
-    const reopened = new LocalStorageDesignRepository(storage, 0);
+    const reopened = new LocalStorageDesignRepository(storage);
 
     expect(await reopened.get(design.id)).toEqual(design);
   });
@@ -170,7 +170,7 @@ describe("LocalStorageDesignRepository", () => {
     URL.revokeObjectURL(logoUrl);
     URL.revokeObjectURL(backgroundUrl);
 
-    const reopened = new LocalStorageDesignRepository(storage, 0);
+    const reopened = new LocalStorageDesignRepository(storage);
     const saved = await reopened.get(design.id);
     expect(saved?.config.branding.logo?.src).toBe(
       `data:image/png;base64,${btoa("logo")}`,
@@ -182,15 +182,12 @@ describe("LocalStorageDesignRepository", () => {
 
   it("returns a full storage as a save failure", async () => {
     const design = await repository.create("minimal", "Minimal");
-    const full = new LocalStorageDesignRepository(
-      {
-        ...storage,
-        setItem: () => {
-          throw new DOMException("Quota exceeded", "QuotaExceededError");
-        },
+    const full = new LocalStorageDesignRepository({
+      ...storage,
+      setItem: () => {
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
       },
-      0,
-    );
+    });
 
     await expect(
       full.save(design.id, {
