@@ -477,7 +477,7 @@ Users keep a library of named designs, each a saved portal configuration and tem
 
 Each design opens in the editor at `/designs/[id]`. Saving is explicit (Save button or ⌘S/Ctrl+S), and the toolbar shows "Unsaved changes" whenever the editor differs from the last save. Leaving with unsaved changes asks for confirmation. Device mode, canvas mode and selection are never saved.
 
-All persistence goes through one async `DesignRepository` interface. The demo implements it with localStorage and fake latency, inlining uploaded images as data URLs on save. A real backend replaces this implementation without changing the UI.
+All persistence goes through one async `DesignRepository` interface. The demo implements it with localStorage, inlining uploaded images as data URLs on save. A real backend replaces this implementation without changing the UI.
 
 ### Publish and Live
 

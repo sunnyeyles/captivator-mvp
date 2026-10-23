@@ -48,7 +48,6 @@ export interface DesignRepository {
 
 export const DESIGNS_KEY = "captivator.designs";
 export const LIVE_KEY = "captivator.live";
-export const DEFAULT_DELAY_MS = 300;
 
 function isTemplateId(value: unknown): value is TemplateId {
   return templateIds.some((id) => id === value);
@@ -150,19 +149,13 @@ function byMostRecent(a: Design, b: Design) {
   return b.updatedAt.localeCompare(a.updatedAt);
 }
 
-// Fake latency makes loading and pending states behave the way a real backend would
 export class LocalStorageDesignRepository implements DesignRepository {
   constructor(
     private readonly storage: Pick<
       Storage,
       "getItem" | "setItem" | "removeItem"
     >,
-    private readonly delayMs = DEFAULT_DELAY_MS,
   ) {}
-
-  private wait() {
-    return new Promise<void>((resolve) => setTimeout(resolve, this.delayMs));
-  }
 
   private read(): Design[] {
     const raw = this.storage.getItem(DESIGNS_KEY);
@@ -205,17 +198,14 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async list() {
-    await this.wait();
     return this.read().sort(byMostRecent);
   }
 
   async get(id: string) {
-    await this.wait();
     return this.read().find((design) => design.id === id);
   }
 
   async create(templateId: TemplateId, name: string) {
-    await this.wait();
     return this.put({
       id: crypto.randomUUID(),
       name,
@@ -227,7 +217,6 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async rename(id: string, name: string) {
-    await this.wait();
     const live = this.readLive();
     // Only the label follows a rename, so the snapshot guests see stays frozen
     if (live?.designId === id) {
@@ -244,7 +233,6 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async duplicate(id: string) {
-    await this.wait();
     const original = this.find(id);
     return this.put({
       ...original,
@@ -258,7 +246,6 @@ export class LocalStorageDesignRepository implements DesignRepository {
     id: string,
     changes: Pick<Design, "config" | "templateId" | "brand">,
   ) {
-    await this.wait();
     const config = await withPersistentImages(changes.config);
     try {
       return this.put({
@@ -277,7 +264,6 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async remove(id: string) {
-    await this.wait();
     if (this.readLive()?.designId === id) {
       throw new Error("Take the live design offline before deleting it");
     }
@@ -285,7 +271,6 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async publish(id: string) {
-    await this.wait();
     const design = this.find(id);
     const live: LiveDesign = {
       designId: design.id,
@@ -306,12 +291,10 @@ export class LocalStorageDesignRepository implements DesignRepository {
   }
 
   async unpublish() {
-    await this.wait();
     this.storage.removeItem(LIVE_KEY);
   }
 
   async getLive() {
-    await this.wait();
     return this.readLive();
   }
 }
