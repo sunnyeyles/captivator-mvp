@@ -57,7 +57,7 @@ export function DesignsLibrary() {
         <div className="grid gap-1">
           <h2 className="font-semibold">No designs yet</h2>
           <p className="text-sm text-muted-foreground">
-            Start from a template and make it your own.
+            Start from your website or a template and make it your own.
           </p>
         </div>
         <NewDesignDialog />

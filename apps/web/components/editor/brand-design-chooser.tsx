@@ -35,7 +35,7 @@ function listPhrases(phrases: string[]) {
   return `${phrases.slice(0, -1).join(", ")} or ${phrases.at(-1)}`;
 }
 
-function MissingDetailsNote({ missing }: { missing: BrandProfile["missing"] }) {
+export function MissingDetailsNote({ missing }: { missing: BrandProfile["missing"] }) {
   const details = missing.flatMap((detail) =>
     detail === "name" ? [] : [missingPhrases[detail]],
   );
