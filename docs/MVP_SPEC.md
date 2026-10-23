@@ -116,7 +116,6 @@ The editor contains three main areas.
 ### Application Toolbar
 
 - Application identity
-- Template selection
 - Desktop/Tablet/Mobile mode switcher
 - Optional reset, undo and redo controls
 
@@ -124,7 +123,7 @@ The editor contains three main areas.
 
 Grouped editing controls:
 
-1. Templates
+1. Change design: one dialog for switching template or generating designs from the customer's website, since both replace the current design
 2. Branding and images
 3. Background
 4. Text

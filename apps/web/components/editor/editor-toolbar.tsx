@@ -5,7 +5,6 @@ import { DesignNameField } from "./design-name-field";
 import { DeviceModeSwitcher } from "./device-mode-switcher";
 import { HistoryControls } from "./history-controls";
 import { SaveControls } from "./save-controls";
-import { TemplatePicker } from "./template-picker";
 
 export function EditorToolbar() {
   return (
@@ -14,7 +13,6 @@ export function EditorToolbar() {
         <BackToDesignsLink />
         <DesignNameField />
         <CurrentDesignStatus />
-        <TemplatePicker />
       </div>
       <DeviceModeSwitcher />
       <div className="flex items-center gap-2 lg:justify-self-end">

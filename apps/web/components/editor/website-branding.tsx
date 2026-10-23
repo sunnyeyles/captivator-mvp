@@ -2,7 +2,7 @@
 
 import { brandProfileSchema, type BrandProfile } from "@repo/portal";
 import { LoaderCircle, RefreshCw } from "lucide-react";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
@@ -13,7 +13,6 @@ import {
 } from "@/lib/background-analysis";
 import { reusableBrand, usePortalEditorStore } from "@/lib/editor-store";
 import { websiteUrlSchema } from "@/lib/website-url";
-import { BrandDesignChooser } from "./brand-design-chooser";
 
 const importResponseSchema = z.union([
   z.object({ brand: brandProfileSchema }),
@@ -22,13 +21,16 @@ const importResponseSchema = z.union([
 
 const GENERIC_ERROR = "Something went wrong reading that site. Try again.";
 
-export function WebsiteBranding() {
+export function WebsiteBranding({
+  onBrandReady,
+}: {
+  onBrandReady: (brand: BrandProfile) => void;
+}) {
   const setBrandDraft = usePortalEditorStore((state) => state.setBrandDraft);
   const shownBrand = usePortalEditorStore((state) => reusableBrand(state));
   const [url, setUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chooserOpen, setChooserOpen] = useState(false);
   const request = useRef<AbortController | null>(null);
   const inputId = useId();
   const errorId = useId();
@@ -36,8 +38,11 @@ export function WebsiteBranding() {
   function openDesigns(brand: BrandProfile) {
     setError(null);
     setBrandDraft(brand);
-    setChooserOpen(true);
+    onBrandReady(brand);
   }
+
+  // Closing the dialog unmounts this form, so a running import has nowhere to report back
+  useEffect(() => () => request.current?.abort(), []);
 
   async function importSite(href: string) {
     request.current?.abort();
@@ -158,7 +163,6 @@ export function WebsiteBranding() {
           </div>
         </div>
       ) : null}
-      <BrandDesignChooser open={chooserOpen} onOpenChange={setChooserOpen} />
     </>
   );
 }
