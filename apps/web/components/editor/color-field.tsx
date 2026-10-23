@@ -26,26 +26,24 @@ export function ColorField({ label, color, onChange }: ColorFieldProps) {
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <Label htmlFor={inputProps.id}>{label}</Label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            aria-label={`Pick ${label.toLowerCase()}`}
-            className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-1"
-            value={toSixDigitHex(color)}
-            onChange={(event) => {
-              resetDraft();
-              onChange(event.target.value);
-            }}
-          />
-          <Input
-            {...inputProps}
-            className="h-8 w-24 font-mono text-xs"
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </div>
+      <Label htmlFor={inputProps.id}>{label}</Label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={`Pick ${label.toLowerCase()}`}
+          className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-1"
+          value={toSixDigitHex(color)}
+          onChange={(event) => {
+            resetDraft();
+            onChange(event.target.value);
+          }}
+        />
+        <Input
+          {...inputProps}
+          className="h-8 min-w-0 flex-1 font-mono text-xs"
+          spellCheck={false}
+          autoComplete="off"
+        />
       </div>
       <FieldError id={errorId} message={error?.message} />
     </div>
