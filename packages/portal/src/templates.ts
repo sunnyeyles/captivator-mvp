@@ -1,4 +1,4 @@
-import { defaultPortalConfig } from "./defaults";
+import { centeredBackgroundPosition, defaultPortalConfig } from "./defaults";
 import type { PortalConfig } from "./schema";
 import { eventBackgroundSrc, placeholderLogoSrc } from "./template-assets";
 
@@ -54,7 +54,8 @@ const event: PortalTemplate = {
       image: {
         src: eventBackgroundSrc,
         fit: "cover",
-        position: "center",
+        position: centeredBackgroundPosition,
+        recommended: null,
         overlay: { color: "#000000", opacity: 0.3 },
       },
     },

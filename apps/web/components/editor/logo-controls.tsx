@@ -24,8 +24,15 @@ export function LogoControls() {
       label="Logo"
       src={logo?.src ?? null}
       // A replaced logo keeps its size, spacing and overrides
-      onUpload={(src) =>
-        updateBranding({ logo: { ...logo, src, alt: logo?.alt ?? "Logo" } })
+      onUpload={(file) =>
+        updateBranding({
+          logo: {
+            ...logo,
+            // The store revokes this URL once the config stops referencing it
+            src: URL.createObjectURL(file),
+            alt: logo?.alt ?? "Logo",
+          },
+        })
       }
       onRemove={() => updateBranding({ logo: null })}
     />

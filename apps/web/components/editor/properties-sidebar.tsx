@@ -6,6 +6,7 @@ import { LogoControls } from "./logo-controls";
 import { SelectedElementControls } from "./selected-element-controls";
 import { TemplateGallery } from "./template-gallery";
 import { TextGroup } from "./text-group";
+import { WebsiteBranding } from "./website-branding";
 
 export function PropertiesSidebar() {
   return (
@@ -18,6 +19,19 @@ export function PropertiesSidebar() {
       </div>
       <Separator />
       <SelectedElementControls />
+      <section
+        aria-labelledby="website-branding-group"
+        className="grid gap-3 p-4"
+      >
+        <h3
+          id="website-branding-group"
+          className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+        >
+          Website branding
+        </h3>
+        <WebsiteBranding />
+      </section>
+      <Separator />
       <section aria-labelledby="templates-group" className="grid gap-3 p-4">
         <h3
           id="templates-group"
