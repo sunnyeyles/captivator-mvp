@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import {
+  BRAND_COLORS_MAX,
   BRAND_NAME_MAX,
   brandDetails,
   contrastRatio,
@@ -35,7 +36,6 @@ const MANIFEST_MAX_BYTES = 256 * 1024;
 // One page, one manifest, two logo attempts and one image, with redirect hops counted too
 export const MAX_OUTBOUND_REQUESTS = 5;
 export const MAX_LOGO_ATTEMPTS = 2;
-const MAX_COLORS = 6;
 
 // The renderer draws logos only through <img>, where an SVG's scripts never run, so SVG is safe for logos alone
 const logoTypes = [...imageTypes, "image/svg+xml"] as const;
@@ -513,7 +513,7 @@ export async function importBrand(
           ...tileCandidates,
         ].flatMap((color) => normalizeColor(color) ?? []),
       ),
-    ].slice(0, MAX_COLORS);
+    ].slice(0, BRAND_COLORS_MAX);
 
     const logoImage = page.images.find((image) =>
       ["src", "alt", "class", "id"].some((key) =>

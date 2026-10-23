@@ -3,8 +3,6 @@ export {
   BACKGROUND_POSITION_MAX,
   BACKGROUND_POSITION_MIN,
   backgroundImageSchema,
-  backgroundPositionRecommendationSchema,
-  backgroundPositionSchema,
   backgroundSchema,
   brandingSchema,
   BUTTON_LABEL_MAX,
@@ -20,7 +18,6 @@ export {
   fontWeights,
   GUEST_FIELD_LABEL_MAX,
   GUEST_FIELD_PLACEHOLDER_MAX,
-  guestFieldSchema,
   guestFieldTypes,
   IMAGE_MAX_BYTES,
   imageFileSchema,
@@ -29,7 +26,6 @@ export {
   LOGO_MAX_HEIGHT_MIN,
   logoSchema,
   MAX_GUEST_FIELDS,
-  overlaySchema,
   portalConfigSchema,
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
@@ -50,14 +46,12 @@ export {
 export {
   clearDeviceOverride,
   clearOverridesFor,
-  deviceOverridesSchema,
   resolveForDevice,
   setDeviceOverride,
   type StyleOverride,
 } from "./overrides";
 export { resolveBackgroundImage } from "./background";
 export {
-  centeredBackgroundPosition,
   CONNECT_BUTTON_ID,
   defaultBackgroundImageSettings,
   defaultOverlay,
@@ -65,24 +59,16 @@ export {
   defaultTextStyle,
   guestFieldDefaults,
   layoutDefaults,
-} from "./defaults";
-export {
   LOGO_ELEMENT_ID,
-  SplashPage,
-  type SplashPageProps,
-} from "./renderer/splash-page";
+} from "./defaults";
+export { SplashPage } from "./renderer/splash-page";
+export { templateIds, templates, type TemplateId } from "./templates";
 export {
-  templateIds,
-  templates,
-  type PortalTemplate,
-  type TemplateId,
-} from "./templates";
-export {
+  BRAND_COLORS_MAX,
   BRAND_NAME_MAX,
   brandDetails,
   brandedConfig,
   brandProfileSchema,
-  MIN_TEXT_CONTRAST,
   type BrandProfile,
 } from "./brand";
 export { contrastRatio } from "./renderer/contrast";

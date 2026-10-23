@@ -34,6 +34,9 @@ export const guestFieldDefaults: Record<
 /** The id the Connect button is selected by, since a page has exactly one. */
 export const CONNECT_BUTTON_ID = "connect-button";
 
+/** The element id the logo uses for canvas selection. */
+export const LOGO_ELEMENT_ID = "logo";
+
 /** The design a new splash page starts from. */
 export const defaultPortalConfig: PortalConfig = {
   texts: [

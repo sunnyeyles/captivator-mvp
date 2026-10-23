@@ -14,6 +14,17 @@ export function deviceOverridesSchema<Style extends z.ZodObject>(style: Style) {
 
 type Overridable = { overrides?: Partial<Record<Device, object>> };
 
+// An element with nothing overridden carries no overrides key, matching one that never had any
+function withOverrides<Element extends Overridable>(
+  element: Element,
+  overrides: Partial<Record<string, object>>,
+): Element {
+  const result: Overridable = { ...element };
+  if (Object.keys(overrides).length > 0) result.overrides = overrides;
+  else delete result.overrides;
+  return result as Element;
+}
+
 /** The style values an element can override for one device. */
 export type StyleOverride<Element extends Overridable> = NonNullable<
   NonNullable<Element["overrides"]>[Device]
@@ -59,11 +70,7 @@ export function clearDeviceOverride<Element extends Overridable>(
   const overrides: Partial<Record<Device, object>> = { ...element.overrides };
   if (Object.keys(remaining).length > 0) overrides[device] = remaining;
   else delete overrides[device];
-  const result: Overridable = { ...element };
-  // An element with nothing overridden carries no overrides key, matching one that never had any
-  if (Object.keys(overrides).length > 0) result.overrides = overrides;
-  else delete result.overrides;
-  return result as Element;
+  return withOverrides(element, overrides);
 }
 
 /** Returns the element with the given keys' overrides removed on every device, so the shared value applies everywhere. */
@@ -78,9 +85,5 @@ export function clearOverridesFor<Element extends Overridable>(
     );
     if (remaining.length > 0) overrides[device] = Object.fromEntries(remaining);
   }
-  const result: Overridable = { ...element };
-  // An element with nothing overridden carries no overrides key, matching one that never had any
-  if (Object.keys(overrides).length > 0) result.overrides = overrides;
-  else delete result.overrides;
-  return result as Element;
+  return withOverrides(element, overrides);
 }
