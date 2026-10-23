@@ -122,14 +122,11 @@ The editor contains three main areas.
 
 ### Properties Sidebar
 
-Grouped editing controls:
+The sidebar shows one thing at a time, so the customer always knows where an edit goes.
 
-1. Change design: one dialog for switching template or generating designs from the customer's website, since both replace the current design
-2. Branding and images
-3. Background
-4. Text
-5. Guest fields
-6. Connect button
+**Nothing selected:** the Page panel holds Change design, one dialog for switching template or generating designs from the customer's website, since both replace the current design. Below it are the page's elements (logo, texts, guest fields and Connect button, with Add text and Add field) and the background. Choosing an element in the list selects it.
+
+**An element selected**, from the list or the canvas: only that element's controls, with a way back to the page.
 
 ### Interactive Design Canvas
 

@@ -7,11 +7,13 @@ import {
   GUEST_FIELD_PLACEHOLDER_MAX,
   guestFieldDefaults,
   guestFieldSchema,
+  guestFieldTypes,
   layoutDefaults,
   resolveForDevice,
   SPACE_ABOVE_MAX,
   SPACE_ABOVE_MIN,
   type GuestField,
+  type GuestFieldType,
   type StyleOverride,
 } from "@repo/portal";
 import { Trash2 } from "lucide-react";
@@ -23,7 +25,12 @@ import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { DeviceOverrideNumberField } from "./device-override-number-field";
 
+function isGuestFieldType(value: string): value is GuestFieldType {
+  return guestFieldTypes.some((type) => type === value);
+}
+
 export function GuestFieldControls({ field }: { field: GuestField }) {
+  const fields = usePortalEditorStore((state) => state.config.fields);
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
   const updateField = usePortalEditorStore((state) => state.updateField);
   const overrideField = usePortalEditorStore((state) => state.overrideField);
@@ -53,6 +60,37 @@ export function GuestFieldControls({ field }: { field: GuestField }) {
 
   return (
     <div className="grid gap-4">
+      <div className="grid gap-2">
+        <Label asChild>
+          <span>Asks for</span>
+        </Label>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          aria-label="Field type"
+          className="w-full"
+          value={field.type}
+          // Radix emits an empty string when the active item is clicked again, which would clear the type
+          onValueChange={(value) =>
+            isGuestFieldType(value) && updateField(field.id, { type: value })
+          }
+        >
+          {guestFieldTypes.map((type) => (
+            <ToggleGroupItem
+              key={type}
+              value={type}
+              className="flex-1"
+              // A page asks for each kind of guest detail once
+              disabled={fields.some(
+                (other) => other.id !== field.id && other.type === type,
+              )}
+            >
+              {guestFieldDefaults[type].label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
       <div className="grid gap-2">
         <Label htmlFor={labelId}>Label</Label>
         <Input

@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Only one of the Page panel and the selected element panel shows at a time
-- [ ] Guest field rows keep reordering, and the field type control moves into the field's own panel
-- [ ] With no logo, the Page panel offers the logo upload
-- [ ] The Text, Guest fields and Connect button sections are gone
+- [x] Only one of the Page panel and the selected element panel shows at a time
+- [x] Guest field rows keep reordering, and the field type control moves into the field's own panel
+- [x] With no logo, the Page panel offers the logo upload
+- [x] The Text, Guest fields and Connect button sections are gone
