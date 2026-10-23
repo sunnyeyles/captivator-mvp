@@ -1,14 +1,10 @@
 "use client";
 
-import { SplashPage, type Device } from "@repo/portal";
+import { SplashPage } from "@repo/portal";
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { deviceFrames } from "@/lib/device-frames";
 import { usePortalEditorStore } from "@/lib/editor-store";
-
-const frameSizes: Record<Device, { width: number; height: number }> = {
-  desktop: { width: 1280, height: 800 },
-  tablet: { width: 820, height: 1180 },
-  mobile: { width: 390, height: 844 },
-};
+import { RepositionLayer } from "./reposition-layer";
 
 const WORKSPACE_PADDING = 32;
 
@@ -47,6 +43,7 @@ export function DesignCanvas() {
     (state) => state.selectedElementId,
   );
   const selectElement = usePortalEditorStore((state) => state.selectElement);
+  const repositioning = usePortalEditorStore((state) => state.repositioning);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [workspace, setWorkspace] = useState<{
     width: number;
@@ -65,7 +62,7 @@ export function DesignCanvas() {
     return () => observer.disconnect();
   }, []);
 
-  const frame = frameSizes[deviceMode];
+  const frame = deviceFrames[deviceMode];
   // Scale the whole frame rather than resizing it, so the design's own layout never changes
   const scale = workspace
     ? Math.min(
@@ -74,6 +71,12 @@ export function DesignCanvas() {
         1,
       )
     : 0;
+
+  const shownImage =
+    config.background.type === "image" ? config.background.image : null;
+  // Derived here so a flag left on by undo or a template switch can never show the layer without an image
+  const repositionImage =
+    repositioning && canvasMode === "edit" ? shownImage : null;
 
   return (
     <div
@@ -85,7 +88,7 @@ export function DesignCanvas() {
     >
       {scale > 0 ? (
         <div
-          className="shrink-0 overflow-hidden rounded-lg shadow-lg ring-1 ring-border data-[device=mobile]:rounded-[2rem] data-[device=tablet]:rounded-[1.5rem]"
+          className="relative shrink-0 overflow-hidden rounded-lg shadow-lg ring-1 ring-border data-[device=mobile]:rounded-[2rem] data-[device=tablet]:rounded-[1.5rem]"
           data-device={deviceMode}
           style={{ width: frame.width * scale, height: frame.height * scale }}
         >
@@ -101,6 +104,14 @@ export function DesignCanvas() {
               onSelectElement={selectElement}
             />
           </div>
+          {repositionImage ? (
+            <RepositionLayer
+              image={repositionImage}
+              device={deviceMode}
+              frame={frame}
+              scale={scale}
+            />
+          ) : null}
         </div>
       ) : null}
     </div>

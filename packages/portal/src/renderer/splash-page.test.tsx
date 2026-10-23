@@ -38,7 +38,8 @@ const imageConfig: PortalConfig = {
     image: {
       src: "blob:http://localhost/background",
       fit: "contain",
-      position: "top",
+      position: { x: 50, y: 0 },
+      recommended: null,
       overlay: { color: "#000000", opacity: 0.25 },
     },
   },
@@ -46,6 +47,30 @@ const imageConfig: PortalConfig = {
 };
 
 const noop = () => {};
+
+function withBackgroundImage(
+  image: Omit<
+    NonNullable<PortalConfig["background"]["image"]>,
+    "src" | "overlay"
+  >,
+): PortalConfig {
+  return {
+    ...config,
+    background: {
+      type: "image",
+      color: "#00ff00",
+      image: {
+        src: "blob:http://localhost/background",
+        overlay: null,
+        ...image,
+      },
+    },
+  };
+}
+
+function backgroundImageTag(html: string) {
+  return html.match(/<img[^>]*aria-hidden[^>]*>/)?.[0] ?? "";
+}
 
 describe("SplashPage", () => {
   it.each(devices)("renders the config on %s", (device) => {
@@ -351,13 +376,97 @@ describe("SplashPage", () => {
 
     expect(html).toContain('src="blob:http://localhost/logo"');
     expect(html).toContain('alt="Acme logo"');
-    expect(html).toContain(
-      "background-image:url(&quot;blob:http://localhost/background&quot;)",
+    expect(backgroundImageTag(html)).toContain(
+      'src="blob:http://localhost/background"',
     );
-    expect(html).toContain("background-size:contain");
-    expect(html).toContain("background-position:top");
+    expect(backgroundImageTag(html)).toContain(
+      "object-fit:contain;object-position:50% 0%",
+    );
+    expect(html).toContain("background-color:#00ff00");
     expect(html).toContain("opacity:0.25");
   });
+
+  it("draws the background as a decorative image that ignores the pointer", () => {
+    const tag = backgroundImageTag(
+      renderToStaticMarkup(
+        <SplashPage config={imageConfig} device="desktop" mode="edit" />,
+      ),
+    );
+
+    expect(tag).toContain('alt=""');
+    expect(tag).toContain('aria-hidden="true"');
+    expect(tag).toContain('draggable="false"');
+    expect(tag).toContain("pointer-events-none");
+    expect(tag).not.toContain("data-element-id");
+  });
+
+  const positionedConfig = withBackgroundImage({
+    fit: "cover",
+    position: { x: 10, y: 20 },
+    recommended: {
+      desktop: { x: 30, y: 40 },
+      tablet: { x: 50, y: 60 },
+      mobile: { x: 70, y: 80 },
+    },
+    overrides: { mobile: { position: { x: 5, y: 95 } } },
+  });
+
+  it.each([
+    ["desktop", "30% 40%"],
+    ["tablet", "50% 60%"],
+    ["mobile", "5% 95%"],
+  ] as const)(
+    "positions a covering image on %s by override, then recommendation",
+    (device, position) => {
+      const html = renderToStaticMarkup(
+        <SplashPage config={positionedConfig} device={device} mode="edit" />,
+      );
+      expect(backgroundImageTag(html)).toContain(
+        `object-fit:cover;object-position:${position}`,
+      );
+    },
+  );
+
+  it.each(devices)(
+    "positions a contained image on %s by override, then the shared position",
+    (device) => {
+      const html = renderToStaticMarkup(
+        <SplashPage
+          config={withBackgroundImage({
+            ...positionedConfig.background.image!,
+            fit: "contain",
+          })}
+          device={device}
+          mode="edit"
+        />,
+      );
+      expect(backgroundImageTag(html)).toContain(
+        `object-position:${device === "mobile" ? "5% 95%" : "10% 20%"}`,
+      );
+    },
+  );
+
+  it.each(devices)(
+    "positions the background the same in every mode on %s",
+    (device) => {
+      const [edit, preview, published] = (
+        ["edit", "preview", "published"] as const
+      ).map((mode) =>
+        backgroundImageTag(
+          renderToStaticMarkup(
+            <SplashPage
+              config={positionedConfig}
+              device={device}
+              mode={mode}
+              onSelectElement={noop}
+            />,
+          ),
+        ),
+      );
+      expect(preview).toEqual(edit);
+      expect(published).toEqual(edit);
+    },
+  );
 
   it("keeps the logo and background image when switching device", () => {
     const desktop = renderToStaticMarkup(
@@ -378,7 +487,6 @@ describe("SplashPage", () => {
     );
 
     expect(html).not.toContain("<img");
-    expect(html).not.toContain("background-image");
     expect(html).not.toContain("opacity");
   });
 
@@ -395,7 +503,7 @@ describe("SplashPage", () => {
     );
 
     expect(html).toContain("background-color:#00ff00");
-    expect(html).not.toContain("background-image");
+    expect(html).not.toContain("blob:http://localhost/background");
     expect(html).not.toContain("opacity");
   });
 

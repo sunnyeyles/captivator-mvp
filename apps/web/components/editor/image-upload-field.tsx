@@ -2,7 +2,7 @@
 
 import { imageTypes } from "@repo/portal";
 import { ImagePlus, Trash2 } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { imageFileError } from "@/lib/images";
@@ -10,8 +10,10 @@ import { imageFileError } from "@/lib/images";
 interface ImageUploadFieldProps {
   label: string;
   src: string | null;
-  onUpload: (src: string) => void;
+  onUpload: (file: File) => void;
   onRemove: () => void;
+  // Replaces the format hint, for progress or results of handling the upload
+  status?: ReactNode;
 }
 
 export function ImageUploadField({
@@ -19,6 +21,7 @@ export function ImageUploadField({
   src,
   onUpload,
   onRemove,
+  status,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +32,7 @@ export function ImageUploadField({
     if (!file) return;
     const message = imageFileError(file);
     setError(message);
-    // The store revokes this URL once the config stops referencing it
-    if (!message) onUpload(URL.createObjectURL(file));
+    if (!message) onUpload(file);
   }
 
   return (
@@ -92,9 +94,11 @@ export function ImageUploadField({
           {error}
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground">
-          PNG, JPEG or WebP, up to 5 MB
-        </p>
+        (status ?? (
+          <p className="text-xs text-muted-foreground">
+            PNG, JPEG or WebP, up to 5 MB
+          </p>
+        ))
       )}
     </div>
   );

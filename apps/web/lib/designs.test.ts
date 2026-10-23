@@ -1,4 +1,9 @@
-import { defaultBackgroundImageSettings, templates } from "@repo/portal";
+import {
+  brandedConfig,
+  defaultBackgroundImageSettings,
+  templates,
+  type BrandProfile,
+} from "@repo/portal";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   DESIGNS_KEY,
@@ -60,6 +65,7 @@ describe("LocalStorageDesignRepository", () => {
     const saved = await repository.save(original.id, {
       config: templates.corporate.config,
       templateId: "corporate",
+      brand: null,
     });
     expect(await repository.get(original.id)).toEqual(saved);
     expect(saved).toMatchObject({ name: "Lobby", templateId: "corporate" });
@@ -92,6 +98,40 @@ describe("LocalStorageDesignRepository", () => {
     expect(names).toEqual(["First", "Second"]);
   });
 
+  it("keeps the brand a design was saved with", async () => {
+    const brand: BrandProfile = {
+      sourceUrl: "https://acme.example/",
+      name: "Acme Coffee",
+      logo: null,
+      image: null,
+      imageRecommended: null,
+      colors: [],
+      primaryColor: null,
+      missing: ["logo", "image", "colors"],
+    };
+    const design = await repository.create("minimal", "Minimal");
+    expect(design.brand).toBeNull();
+
+    await repository.save(design.id, {
+      config: brandedConfig("event", brand),
+      templateId: "event",
+      brand,
+    });
+
+    expect((await repository.get(design.id))?.brand).toEqual(brand);
+  });
+
+  it("reads a design saved before branding as unbranded", async () => {
+    const design = await repository.create("minimal", "Older");
+    // JSON drops undefined, so the stored record has no brand key at all
+    storage.setItem(
+      DESIGNS_KEY,
+      JSON.stringify([{ ...design, brand: undefined }]),
+    );
+
+    expect(await repository.get(design.id)).toEqual(design);
+  });
+
   it("rejects changes to an unknown design", async () => {
     await expect(repository.rename("missing", "Name")).rejects.toThrow();
     await expect(repository.duplicate("missing")).rejects.toThrow();
@@ -117,6 +157,7 @@ describe("LocalStorageDesignRepository", () => {
 
     await repository.save(design.id, {
       templateId: "minimal",
+      brand: null,
       config: {
         ...config,
         branding: { ...config.branding, logo: { src: logoUrl, alt: "Logo" } },
@@ -155,6 +196,7 @@ describe("LocalStorageDesignRepository", () => {
       full.save(design.id, {
         config: templates.corporate.config,
         templateId: "corporate",
+        brand: null,
       }),
     ).rejects.toThrow("Storage is full");
     expect(await repository.get(design.id)).toEqual(design);
@@ -197,6 +239,7 @@ describe("publishing", () => {
     await repository.save(design.id, {
       config: templates.corporate.config,
       templateId: "corporate",
+      brand: null,
     });
 
     expect((await repository.getLive())?.config).toEqual(live.config);
@@ -257,6 +300,7 @@ describe("designStatus", () => {
     const saved = await repository.save(design.id, {
       config: templates.corporate.config,
       templateId: "corporate",
+      brand: null,
     });
 
     expect(designStatus(saved, live)).toBe("live-changed");

@@ -9,19 +9,26 @@ function isDevice(value: string): value is Device {
   return devices.some((device) => device === value);
 }
 
-export function DeviceModeSwitcher() {
-  const deviceMode = usePortalEditorStore((state) => state.deviceMode);
-  const setDeviceMode = usePortalEditorStore((state) => state.setDeviceMode);
+interface DeviceToggleProps {
+  label: string;
+  value: Device;
+  onValueChange: (device: Device) => void;
+}
 
+export function DeviceToggle({
+  label,
+  value,
+  onValueChange,
+}: DeviceToggleProps) {
   return (
     <ToggleGroup
       type="single"
       variant="outline"
       size="sm"
-      aria-label="Device mode"
-      value={deviceMode}
+      aria-label={label}
+      value={value}
       // Radix emits an empty string when the active item is clicked again, which would leave no mode selected
-      onValueChange={(value) => isDevice(value) && setDeviceMode(value)}
+      onValueChange={(next) => isDevice(next) && onValueChange(next)}
     >
       <ToggleGroupItem value="desktop" aria-label="Desktop">
         <Monitor />
@@ -36,5 +43,18 @@ export function DeviceModeSwitcher() {
         Mobile
       </ToggleGroupItem>
     </ToggleGroup>
+  );
+}
+
+export function DeviceModeSwitcher() {
+  const deviceMode = usePortalEditorStore((state) => state.deviceMode);
+  const setDeviceMode = usePortalEditorStore((state) => state.setDeviceMode);
+
+  return (
+    <DeviceToggle
+      label="Device mode"
+      value={deviceMode}
+      onValueChange={setDeviceMode}
+    />
   );
 }

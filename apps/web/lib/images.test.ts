@@ -10,7 +10,13 @@ function withImages(logo: string | null, background: string | null) {
       type: "image",
       color: "#000000",
       image: background
-        ? { src: background, fit: "cover", position: "center", overlay: null }
+        ? {
+            src: background,
+            fit: "cover",
+            position: { x: 50, y: 50 },
+            recommended: null,
+            overlay: null,
+          }
         : null,
     },
   } satisfies PortalConfig;

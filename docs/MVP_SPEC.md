@@ -206,12 +206,15 @@ The configuration architecture allows optional device-specific styling. Each ele
 | Guest field | Width (% of the form column), space above |
 | Connect button | Width (% of the form column), space above |
 | Logo | Maximum height, space above |
+| Background image | Position |
 
 Space above adds to the device layout's own spacing between elements. Each override is validated against the same range as its shared value.
 
-Image positioning and layout arrangement remain possible future overrides.
+Layout arrangement remains a possible future override.
 
 Overrides should be explicit rather than automatically creating separate designs for each device. In the sidebar, the user chooses to override a property for the active device, sees which properties are overridden, and can clear an override back to the shared value. Templates may ship their own overrides, and switching template replaces any existing overrides with the template's.
+
+Background image position is the one property that is per device from the start, because each device gets its own automatic position (see section 9). Dragging the image in reposition mode always acts on the active device, so that drag is the explicit choice to override. The sidebar marks the device as adjusted, and **Reset to automatic** clears the override back to the automatic position.
 
 When no override exists, the shared configuration is used.
 
@@ -337,8 +340,14 @@ Background options:
 
 - Solid colour
 - Uploaded image
-- Image positioning and fitting where supported
+- Image fitting (fill or fit) and per-device positioning
 - Optional overlay
+
+The image is shown unmodified with CSS `object-fit` and a per-device `object-position`, stored as `x`/`y` percentages in the portal config. No cropped or re-encoded copy is made, and the published page needs no JavaScript to position it.
+
+When a background image is uploaded, the editor analyses it in the browser with Smartcrop.js, loaded on first use, and places it with a recommended position for desktop, tablet and mobile in one undo step. A short "finding the best crop" state shows meanwhile. If analysis fails, the image can't be decoded or analysis takes over 2 seconds, the image is placed centred with a quiet note. A newer upload always wins over a late result. Templates' images are never analysed.
+
+The recommendation only applies when the image fills the page. With fit, the whole image shows, so it stays centred. For each device the position resolves to the user's adjustment for that device, then the recommendation, then the shared position. The user can drag the image, or nudge it with the arrow keys, in **Reposition** mode, which adjusts only the active device (see section 6.6).
 
 Images may be represented with browser object URLs during local editing.
 

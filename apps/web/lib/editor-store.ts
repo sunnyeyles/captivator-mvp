@@ -1,9 +1,13 @@
 import {
+  backgroundImageSchema,
   backgroundSchema,
+  brandedConfig,
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
+  colorSchema,
   CONNECT_BUTTON_ID,
+  defaultBackgroundImageSettings,
   defaultTextStyle,
   guestFieldTypes,
   LOGO_ELEMENT_ID,
@@ -12,6 +16,10 @@ import {
   setDeviceOverride,
   templates,
   textElementSchema,
+  type BackgroundImage,
+  type BackgroundPosition,
+  type BackgroundPositionRecommendation,
+  type BrandProfile,
   type ConnectButton,
   type Device,
   type GuestField,
@@ -32,6 +40,7 @@ export type CanvasMode = "edit" | "preview";
 export interface HistoryEntry {
   config: PortalConfig;
   templateId: TemplateId;
+  brand: BrandProfile | null;
 }
 
 export interface PortalEditorState extends HistoryEntry {
@@ -41,12 +50,18 @@ export interface PortalEditorState extends HistoryEntry {
   canvasMode: CanvasMode;
   selectedElementId: string | null;
   saved: HistoryEntry;
+  repositioning: boolean;
+  // The latest import while the customer is choosing a design, kept out of history because it never changes the design
+  brandDraft: BrandProfile | null;
 }
 
 interface PortalEditorActions {
   loadDesign: (design: HistoryEntry) => void;
   markSaved: (entry: HistoryEntry) => void;
   setTemplate: (id: TemplateId) => void;
+  applyBrandedDesign: (templateId: TemplateId, brand: BrandProfile) => void;
+  setBrandDraft: (brand: BrandProfile | null) => void;
+  setBrandDraftColor: (color: string) => void;
   reset: () => void;
   undo: () => void;
   redo: () => void;
@@ -93,6 +108,16 @@ interface PortalEditorActions {
   ) => void;
   overrideLogo: (device: Device, changes: StyleOverride<Logo>) => void;
   clearLogoOverride: (device: Device, key: keyof StyleOverride<Logo>) => void;
+  placeBackgroundImage: (
+    src: string,
+    recommended: BackgroundPositionRecommendation | null,
+  ) => void;
+  overrideBackgroundPosition: (
+    device: Device,
+    position: BackgroundPosition,
+  ) => void;
+  clearBackgroundPositionOverride: (device: Device) => void;
+  setRepositioning: (on: boolean) => void;
 }
 
 export type PortalEditorStore = PortalEditorState & PortalEditorActions;
@@ -102,6 +127,7 @@ export const HISTORY_LIMIT = 100;
 export const initialEditorState: PortalEditorState = {
   config: templates.minimal.config,
   templateId: "minimal",
+  brand: null,
   past: [],
   future: [],
   deviceMode: "desktop",
@@ -110,8 +136,14 @@ export const initialEditorState: PortalEditorState = {
   saved: {
     config: templates.minimal.config,
     templateId: "minimal",
+    brand: null,
   },
+  repositioning: false,
+  brandDraft: null,
 };
+
+// Gesture id for background position overrides, which have no selectable element
+const BACKGROUND_IMAGE_ID = "background-image";
 
 function nextId(prefix: string, items: { id: string }[]) {
   const taken = new Set(items.map((item) => item.id));
@@ -184,18 +216,39 @@ function replaceLogo(
   };
 }
 
+function replaceBackgroundImage(
+  state: PortalEditorState,
+  edit: (current: BackgroundImage) => unknown,
+): Partial<PortalEditorState> {
+  const { image } = state.config.background;
+  if (!image) return state;
+  const parsed = backgroundImageSchema.safeParse(edit(image));
+  if (!parsed.success) return state;
+  return {
+    config: {
+      ...state.config,
+      background: { ...state.config.background, image: parsed.data },
+    },
+  };
+}
+
 function keptSelection(config: PortalConfig, id: string | null) {
   return findSelectedElement(config, id) ? id : null;
 }
 
 function historyEntry(state: PortalEditorState): HistoryEntry {
-  return { config: state.config, templateId: state.templateId };
+  return {
+    config: state.config,
+    templateId: state.templateId,
+    brand: state.brand,
+  };
 }
 
 // Actions rebuild the config even when nothing changed, so history compares by value
 function isUnchanged(state: HistoryEntry, next: Partial<HistoryEntry>) {
   return (
     (next.templateId ?? state.templateId) === state.templateId &&
+    (next.brand === undefined || isDeepEqual(next.brand, state.brand)) &&
     isDeepEqual(next.config, state.config)
   );
 }
@@ -206,7 +259,21 @@ export function hasUnsavedChanges(state: PortalEditorState) {
 }
 
 export function isAtTemplateDefaults(state: PortalEditorState) {
-  return isDeepEqual(state.config, templates[state.templateId].config);
+  return isDeepEqual(
+    state.config,
+    brandedConfig(state.templateId, state.brand),
+  );
+}
+
+// The draft holds the latest import and colour choice, so it wins over the applied brand
+export function reusableBrand(state: PortalEditorState, sourceUrl?: string) {
+  return (
+    [state.brandDraft, state.brand].find(
+      (brand) =>
+        brand !== null &&
+        (sourceUrl === undefined || brand.sourceUrl === sourceUrl),
+    ) ?? null
+  );
 }
 
 // A pause this long between edits to the same target starts a new undo step
@@ -289,14 +356,17 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     ...initialEditorState,
 
     // History starts fresh so undo can never jump back into another design
-    loadDesign: ({ config, templateId }) =>
+    loadDesign: ({ config, templateId, brand }) =>
       setState({
         config,
         templateId,
+        brand,
         past: [],
         future: [],
         selectedElementId: null,
-        saved: { config, templateId },
+        repositioning: false,
+        brandDraft: null,
+        saved: { config, templateId, brand },
       }),
 
     // Takes what was sent to the repository, since edits made while saving are still unsaved
@@ -304,7 +374,7 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
 
     setTemplate: (id) =>
       set((state) => {
-        const { config } = templates[id];
+        const config = brandedConfig(id, state.brand);
         return {
           config,
           templateId: id,
@@ -312,9 +382,29 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
         };
       }),
 
+    applyBrandedDesign: (templateId, brand) =>
+      set((state) => {
+        const config = brandedConfig(templateId, brand);
+        return {
+          config,
+          templateId,
+          brand,
+          selectedElementId: keptSelection(config, state.selectedElementId),
+        };
+      }),
+
+    setBrandDraft: (brandDraft) => set({ brandDraft }),
+
+    setBrandDraftColor: (primaryColor) =>
+      set((state) =>
+        state.brandDraft && colorSchema.safeParse(primaryColor).success
+          ? { brandDraft: { ...state.brandDraft, primaryColor } }
+          : state,
+      ),
+
     reset: () =>
       set((state) => {
-        const { config } = templates[state.templateId];
+        const config = brandedConfig(state.templateId, state.brand);
         return {
           config,
           selectedElementId: keptSelection(config, state.selectedElementId),
@@ -357,8 +447,16 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     setCanvasMode: (canvasMode) =>
       set(
         canvasMode === "preview"
-          ? { canvasMode, selectedElementId: null }
+          ? { canvasMode, selectedElementId: null, repositioning: false }
           : { canvasMode },
+      ),
+
+    // Repositioning captures canvas clicks, so a selection would only be stale while it lasts
+    setRepositioning: (repositioning) =>
+      set(
+        repositioning
+          ? { repositioning, selectedElementId: null }
+          : { repositioning },
       ),
 
     selectElement: (selectedElementId) => set({ selectedElementId }),
@@ -372,7 +470,12 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
           });
           // The renderer trusts the config, so invalid edits never reach it
           if (!parsed.success) return state;
-          return { config: { ...state.config, background: parsed.data } };
+          const imageShown =
+            parsed.data.type === "image" && parsed.data.image !== null;
+          return {
+            config: { ...state.config, background: parsed.data },
+            repositioning: state.repositioning && imageShown,
+          };
         },
         gestureKey(
           "background",
@@ -548,6 +651,41 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
       set((state) =>
         replaceLogo(state, (current) =>
           clearDeviceOverride(current, device, key),
+        ),
+      ),
+
+    // Adjustments made for the previous image would misplace the new one, so only fit and overlay carry over
+    placeBackgroundImage: (src, recommended) =>
+      set((state) => {
+        const { background } = state.config;
+        const previous = background.image ?? defaultBackgroundImageSettings;
+        const parsed = backgroundSchema.safeParse({
+          ...background,
+          image: {
+            ...defaultBackgroundImageSettings,
+            fit: previous.fit,
+            overlay: previous.overlay,
+            src,
+            recommended,
+          },
+        });
+        if (!parsed.success) return state;
+        return { config: { ...state.config, background: parsed.data } };
+      }),
+
+    overrideBackgroundPosition: (device, position) =>
+      set(
+        (state) =>
+          replaceBackgroundImage(state, (current) =>
+            setDeviceOverride(current, device, { position }),
+          ),
+        gestureKey(`override-${device}`, ["position"], BACKGROUND_IMAGE_ID),
+      ),
+
+    clearBackgroundPositionOverride: (device) =>
+      set((state) =>
+        replaceBackgroundImage(state, (current) =>
+          clearDeviceOverride(current, device, "position"),
         ),
       ),
   };

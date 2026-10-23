@@ -113,24 +113,52 @@ export const brandingSchema = z.object({
 
 export const backgroundFits = ["cover", "contain"] as const;
 
-export const backgroundPositions = [
-  "center",
-  "top",
-  "bottom",
-  "left",
-  "right",
-] as const;
+export const BACKGROUND_POSITION_MIN = 0;
+export const BACKGROUND_POSITION_MAX = 100;
+
+const positionPercentSchema = z
+  .number()
+  .min(
+    BACKGROUND_POSITION_MIN,
+    `Use a position from ${BACKGROUND_POSITION_MIN} to ${BACKGROUND_POSITION_MAX}`,
+  )
+  .max(
+    BACKGROUND_POSITION_MAX,
+    `Use a position from ${BACKGROUND_POSITION_MIN} to ${BACKGROUND_POSITION_MAX}`,
+  );
+
+/** A background image position as CSS `object-position` percentages, where 50/50 is centred. */
+export const backgroundPositionSchema = z.object({
+  x: positionPercentSchema,
+  y: positionPercentSchema,
+});
+
+/** The automatic background image position worked out for each device. */
+export const backgroundPositionRecommendationSchema = z.object({
+  desktop: backgroundPositionSchema,
+  tablet: backgroundPositionSchema,
+  mobile: backgroundPositionSchema,
+});
 
 export const overlaySchema = z.object({
   color: colorSchema,
   opacity: z.number().min(0).max(1),
 });
 
-export const backgroundImageSchema = z.object({
+const backgroundImageBaseSchema = z.object({
   src: imageSrcSchema,
   fit: z.enum(backgroundFits),
-  position: z.enum(backgroundPositions),
+  // The final fallback, used when a device has neither an override nor a recommendation
+  position: backgroundPositionSchema,
+  // Null when the image was never analysed, such as a template's bundled image
+  recommended: backgroundPositionRecommendationSchema.nullable(),
   overlay: overlaySchema.nullable(),
+});
+
+export const backgroundImageSchema = backgroundImageBaseSchema.extend({
+  overrides: deviceOverridesSchema(
+    backgroundImageBaseSchema.pick({ position: true }),
+  ).optional(),
 });
 
 // The colour is kept in image mode so switching back restores it and it fills any area the image leaves
@@ -245,6 +273,12 @@ export type ConnectButton = z.infer<typeof buttonSchema>;
 export type Logo = z.infer<typeof logoSchema>;
 
 export type BackgroundImage = z.infer<typeof backgroundImageSchema>;
+
+export type BackgroundPosition = z.infer<typeof backgroundPositionSchema>;
+
+export type BackgroundPositionRecommendation = z.infer<
+  typeof backgroundPositionRecommendationSchema
+>;
 
 /** The devices a splash page is designed and previewed for, largest first. */
 export const devices = ["desktop", "tablet", "mobile"] as const;

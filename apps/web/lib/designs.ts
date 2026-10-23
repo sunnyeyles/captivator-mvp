@@ -1,7 +1,9 @@
 import {
+  brandProfileSchema,
   portalConfigSchema,
   templateIds,
   templates,
+  type BrandProfile,
   type PortalConfig,
   type TemplateId,
 } from "@repo/portal";
@@ -12,6 +14,8 @@ export interface Design {
   name: string;
   templateId: TemplateId;
   config: PortalConfig;
+  // Kept so template switches and resets in a reopened design stay branded
+  brand: BrandProfile | null;
   updatedAt: string;
 }
 
@@ -34,7 +38,7 @@ export interface DesignRepository {
   duplicate(id: string): Promise<Design>;
   save(
     id: string,
-    changes: Pick<Design, "config" | "templateId">,
+    changes: Pick<Design, "config" | "templateId" | "brand">,
   ): Promise<Design>;
   remove(id: string): Promise<void>;
   publish(id: string): Promise<LiveDesign>;
@@ -56,16 +60,26 @@ function parseDesign(value: unknown): Design | null {
   const record: Record<string, unknown> = { ...value };
   const { id, name, templateId, updatedAt } = record;
   const config = portalConfigSchema.safeParse(record.config);
+  // Designs saved before branding existed have no brand, which means unbranded
+  const brand = brandProfileSchema.nullable().safeParse(record.brand ?? null);
   if (
     typeof id !== "string" ||
     typeof name !== "string" ||
     typeof updatedAt !== "string" ||
     !isTemplateId(templateId) ||
-    !config.success
+    !config.success ||
+    !brand.success
   ) {
     return null;
   }
-  return { id, name, templateId, config: config.data, updatedAt };
+  return {
+    id,
+    name,
+    templateId,
+    config: config.data,
+    brand: brand.data,
+    updatedAt,
+  };
 }
 
 function parseLive(value: unknown): LiveDesign | undefined {
@@ -207,6 +221,7 @@ export class LocalStorageDesignRepository implements DesignRepository {
       name,
       templateId,
       config: templates[templateId].config,
+      brand: null,
       updatedAt: new Date().toISOString(),
     });
   }
@@ -239,7 +254,10 @@ export class LocalStorageDesignRepository implements DesignRepository {
     });
   }
 
-  async save(id: string, changes: Pick<Design, "config" | "templateId">) {
+  async save(
+    id: string,
+    changes: Pick<Design, "config" | "templateId" | "brand">,
+  ) {
     await this.wait();
     const config = await withPersistentImages(changes.config);
     try {
@@ -247,6 +265,7 @@ export class LocalStorageDesignRepository implements DesignRepository {
         ...this.find(id),
         templateId: changes.templateId,
         config,
+        brand: changes.brand,
         updatedAt: new Date().toISOString(),
       });
     } catch (error) {

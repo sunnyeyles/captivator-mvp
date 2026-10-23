@@ -1,7 +1,10 @@
 export {
   backgroundFits,
+  BACKGROUND_POSITION_MAX,
+  BACKGROUND_POSITION_MIN,
   backgroundImageSchema,
-  backgroundPositions,
+  backgroundPositionRecommendationSchema,
+  backgroundPositionSchema,
   backgroundSchema,
   brandingSchema,
   BUTTON_LABEL_MAX,
@@ -33,6 +36,8 @@ export {
   textAligns,
   textElementSchema,
   type BackgroundImage,
+  type BackgroundPosition,
+  type BackgroundPositionRecommendation,
   type ConnectButton,
   type Device,
   type GuestField,
@@ -49,7 +54,9 @@ export {
   setDeviceOverride,
   type StyleOverride,
 } from "./overrides";
+export { resolveBackgroundImage } from "./background";
 export {
+  centeredBackgroundPosition,
   CONNECT_BUTTON_ID,
   defaultBackgroundImageSettings,
   defaultOverlay,
@@ -69,3 +76,12 @@ export {
   type PortalTemplate,
   type TemplateId,
 } from "./templates";
+export {
+  BRAND_NAME_MAX,
+  brandDetails,
+  brandedConfig,
+  brandProfileSchema,
+  MIN_TEXT_CONTRAST,
+  type BrandProfile,
+} from "./brand";
+export { contrastRatio } from "./renderer/contrast";

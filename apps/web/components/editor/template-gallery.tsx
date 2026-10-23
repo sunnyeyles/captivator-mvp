@@ -1,6 +1,12 @@
 "use client";
 
-import { templateIds, templates, type TemplateId } from "@repo/portal";
+import {
+  brandedConfig,
+  templateIds,
+  templates,
+  type BrandProfile,
+  type TemplateId,
+} from "@repo/portal";
 import { Button } from "@/components/ui/button";
 import { PortalThumbnail } from "@/components/preview/portal-thumbnail";
 import { usePortalEditorStore } from "@/lib/editor-store";
@@ -8,11 +14,13 @@ import { usePortalEditorStore } from "@/lib/editor-store";
 export function TemplateGrid({
   selectedId,
   onSelect,
+  brand = null,
   disabled = false,
   thumbnailWidth = 72,
 }: {
   selectedId?: TemplateId;
   onSelect: (id: TemplateId) => void;
+  brand?: BrandProfile | null;
   disabled?: boolean;
   thumbnailWidth?: number;
 }) {
@@ -24,7 +32,7 @@ export function TemplateGrid({
         return (
           <li key={id} className="relative grid justify-items-center gap-1">
             <PortalThumbnail
-              config={template.config}
+              config={brandedConfig(id, brand)}
               width={thumbnailWidth}
               className={`rounded-md ${selected ? "ring-2 ring-primary" : "ring-1 ring-border"}`}
             />
@@ -49,7 +57,14 @@ export function TemplateGrid({
 
 export function TemplateGallery() {
   const templateId = usePortalEditorStore((state) => state.templateId);
+  const brand = usePortalEditorStore((state) => state.brand);
   const setTemplate = usePortalEditorStore((state) => state.setTemplate);
 
-  return <TemplateGrid selectedId={templateId} onSelect={setTemplate} />;
+  return (
+    <TemplateGrid
+      selectedId={templateId}
+      brand={brand}
+      onSelect={setTemplate}
+    />
+  );
 }

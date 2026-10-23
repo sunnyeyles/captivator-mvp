@@ -4,6 +4,7 @@ import {
   guestFieldDefaults,
   layoutDefaults,
 } from "../defaults";
+import { resolveBackgroundImage } from "../background";
 import { resolveForDevice } from "../overrides";
 import type {
   Device,
@@ -106,18 +107,6 @@ function GuestFieldInput({
   );
 }
 
-function backgroundStyle(background: PortalConfig["background"]) {
-  const style: CSSProperties = { backgroundColor: background.color };
-  if (background.type !== "image" || !background.image) return style;
-  return {
-    ...style,
-    backgroundImage: `url(${JSON.stringify(background.image.src)})`,
-    backgroundSize: background.image.fit,
-    backgroundPosition: background.image.position,
-    backgroundRepeat: "no-repeat",
-  };
-}
-
 /** Renders a splash page from its config for one device, taking selection state and callbacks as props in edit mode. */
 export function SplashPage({
   config,
@@ -133,8 +122,11 @@ export function SplashPage({
   const logo =
     config.branding.logo && resolveForDevice(config.branding.logo, device);
   const button = resolveForDevice(config.button, device);
-  const overlay =
-    background.type === "image" ? background.image?.overlay : null;
+  const backgroundImage =
+    background.type === "image" && background.image
+      ? resolveBackgroundImage(background.image, device)
+      : null;
+  const overlay = backgroundImage?.overlay;
   const labelStyle = guestLabelStyle(background);
 
   return (
@@ -143,9 +135,24 @@ export function SplashPage({
       data-device={device}
       data-mode={mode}
       className={`relative flex size-full flex-col items-center justify-center ${layout.page}`}
-      style={backgroundStyle(background)}
+      // The colour stays on the root so it fills any area a contained image leaves
+      style={{ backgroundColor: background.color }}
       {...clearSelectionProps(selection)}
     >
+      {backgroundImage ? (
+        // Ignores pointer events so a click on empty canvas still reaches the root and clears the selection
+        <img
+          src={backgroundImage.src}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="pointer-events-none absolute inset-0 size-full select-none"
+          style={{
+            objectFit: backgroundImage.fit,
+            objectPosition: `${backgroundImage.position.x}% ${backgroundImage.position.y}%`,
+          }}
+        />
+      ) : null}
       {overlay ? (
         <div
           aria-hidden

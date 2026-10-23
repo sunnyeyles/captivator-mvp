@@ -379,9 +379,16 @@ describe("backgroundSchema", () => {
   const image = {
     src: "blob:http://localhost/1",
     fit: "cover",
-    position: "center",
+    position: { x: 50, y: 50 },
+    recommended: null,
     overlay: { color: "#000000", opacity: 0.5 },
   } as const;
+
+  const recommended = {
+    desktop: { x: 37.5, y: 20 },
+    tablet: { x: 0, y: 100 },
+    mobile: { x: 62.4, y: 50 },
+  };
 
   it("accepts a solid colour", () => {
     expect(
@@ -394,6 +401,20 @@ describe("backgroundSchema", () => {
     expect(
       backgroundSchema.safeParse({ type: "image", color: "#fff", image })
         .success,
+    ).toBe(true);
+  });
+
+  it("accepts a recommendation and position overrides", () => {
+    expect(
+      backgroundSchema.safeParse({
+        type: "image",
+        color: "#fff",
+        image: {
+          ...image,
+          recommended,
+          overrides: { mobile: { position: { x: 12.5, y: 0 } } },
+        },
+      }).success,
     ).toBe(true);
   });
 
@@ -411,7 +432,34 @@ describe("backgroundSchema", () => {
     { type: "gradient" },
     { image: { ...image, src: "" } },
     { image: { ...image, fit: "stretch" } },
-    { image: { ...image, position: "top-left" } },
+    { image: { ...image, position: "center" } },
+    { image: { ...image, position: { x: -1, y: 50 } } },
+    { image: { ...image, position: { x: 50, y: 100.5 } } },
+    { image: { ...image, position: { x: Number.NaN, y: 50 } } },
+    { image: { ...image, position: { x: 50 } } },
+    { image: { ...image, recommended: undefined } },
+    {
+      image: {
+        ...image,
+        recommended: {
+          desktop: recommended.desktop,
+          mobile: recommended.mobile,
+        },
+      },
+    },
+    {
+      image: {
+        ...image,
+        recommended: { ...recommended, mobile: { x: 101, y: 50 } },
+      },
+    },
+    { image: { ...image, overrides: { mobile: { fit: "contain" } } } },
+    {
+      image: {
+        ...image,
+        overrides: { tablet: { position: { x: 50, y: -5 } } },
+      },
+    },
     { image: { ...image, overlay: { color: "#000000", opacity: 1.5 } } },
     { image: { ...image, overlay: { color: "#000000", opacity: -0.1 } } },
     { image: { ...image, overlay: { color: "black", opacity: 0.5 } } },

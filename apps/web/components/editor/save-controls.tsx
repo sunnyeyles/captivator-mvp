@@ -13,15 +13,17 @@ export function useSaveDesign() {
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
-    const { config, templateId, markSaved } = usePortalEditorStore.getState();
+    const { config, templateId, brand, markSaved } =
+      usePortalEditorStore.getState();
     setPending(true);
     setError(null);
     try {
       const saved = await designRepository().save(design.id, {
         config,
         templateId,
+        brand,
       });
-      markSaved({ config, templateId });
+      markSaved({ config, templateId, brand });
       setDesign(saved);
       return true;
     } catch (cause) {
