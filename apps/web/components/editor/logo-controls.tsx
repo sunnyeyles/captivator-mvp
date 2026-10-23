@@ -5,13 +5,11 @@ import {
   LOGO_MAX_HEIGHT_MAX,
   LOGO_MAX_HEIGHT_MIN,
   resolveForDevice,
-  SPACE_ABOVE_MAX,
-  SPACE_ABOVE_MIN,
   type Logo,
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { LayoutSection } from "./layout-section";
-import { SliderField } from "./slider-field";
+import { SliderField, SpaceAboveSlider } from "./slider-field";
 import { ImageUploadField } from "./image-upload-field";
 
 export function LogoControls() {
@@ -55,12 +53,8 @@ export function LogoLayoutControls({ logo }: { logo: Logo }) {
         onValueChange={(maxHeight) => updateLogo({ maxHeight })}
       />
       <LayoutSection>
-        <SliderField
-          label="Space above"
-          unit="px"
-          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-          min={SPACE_ABOVE_MIN}
-          max={SPACE_ABOVE_MAX}
+        <SpaceAboveSlider
+          value={resolved.spaceAbove}
           onValueChange={(spaceAbove) => updateLogo({ spaceAbove })}
         />
       </LayoutSection>

@@ -1,68 +1,19 @@
 "use client";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@repo/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
-interface ConfirmDialogProps {
+interface PublishDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
   onConfirm: () => void;
 }
 
-function ConfirmDialog({
-  open,
-  onOpenChange,
-  pending,
-  onConfirm,
-  title,
-  description,
-  action,
-  pendingAction,
-}: ConfirmDialogProps & {
-  title: string;
-  description: string;
-  action: string;
-  pendingAction: string;
-}) {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={pending}
-            onClick={(event) => {
-              // Stays open until the action finishes so the pending state is visible
-              event.preventDefault();
-              onConfirm();
-            }}
-          >
-            {pending ? pendingAction : action}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
 export function ReplaceLiveDialog({
   liveName,
   designName,
   ...props
-}: ConfirmDialogProps & { liveName: string; designName: string }) {
+}: PublishDialogProps & { liveName: string; designName: string }) {
   return (
     <ConfirmDialog
       {...props}
@@ -77,7 +28,7 @@ export function ReplaceLiveDialog({
 export function TakeOfflineDialog({
   designName,
   ...props
-}: ConfirmDialogProps & { designName: string }) {
+}: PublishDialogProps & { designName: string }) {
   return (
     <ConfirmDialog
       {...props}

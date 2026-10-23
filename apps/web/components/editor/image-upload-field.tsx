@@ -6,6 +6,7 @@ import { useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@repo/ui/button";
 import { Label } from "@repo/ui/label";
 import { imageFileError } from "@/lib/images";
+import { FieldError } from "./validated-draft";
 
 interface ImageUploadFieldProps {
   label: string;
@@ -90,9 +91,7 @@ export function ImageUploadField({
         }}
       />
       {error ? (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
+        <FieldError id={errorId} role="alert" message={error} />
       ) : (
         (status ?? (
           <p className="text-xs text-muted-foreground">

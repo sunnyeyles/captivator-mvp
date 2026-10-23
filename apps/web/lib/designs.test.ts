@@ -2,7 +2,6 @@ import {
   brandedConfig,
   defaultBackgroundImageSettings,
   templates,
-  type BrandProfile,
 } from "@repo/portal";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -10,6 +9,7 @@ import {
   designStatus,
   LocalStorageDesignRepository,
 } from "./designs";
+import { acmeBrand } from "./test-fixtures";
 
 function memoryStorage() {
   const items = new Map<string, string>();
@@ -99,16 +99,7 @@ describe("LocalStorageDesignRepository", () => {
   });
 
   it("keeps the brand a design was saved with", async () => {
-    const brand: BrandProfile = {
-      sourceUrl: "https://acme.example/",
-      name: "Acme Coffee",
-      logo: null,
-      image: null,
-      imageRecommended: null,
-      colors: [],
-      primaryColor: null,
-      missing: ["logo", "image", "colors"],
-    };
+    const brand = acmeBrand;
     const design = await repository.create("minimal", "Minimal");
     expect(design.brand).toBeNull();
 

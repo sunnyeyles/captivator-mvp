@@ -1,5 +1,6 @@
 import { isIP } from "node:net";
 import {
+  BRAND_COLORS_MAX,
   BRAND_NAME_MAX,
   brandDetails,
   contrastRatio,
@@ -14,7 +15,8 @@ import {
   type SafeFetchErrorCode,
   type SafeResponse,
 } from "./safe-fetch";
-import { websiteUrlSchema } from "./website-url";
+import { isPlainRecord } from "./equal";
+import { bareHost, isHttpUrl, websiteUrlSchema } from "./website-url";
 
 export type BrandImportErrorCode =
   "invalid_url" | "blocked_url" | "unreachable" | "not_html" | "timeout";
@@ -34,7 +36,6 @@ const MANIFEST_MAX_BYTES = 256 * 1024;
 // One page, one manifest, two logo attempts and one image, with redirect hops counted too
 export const MAX_OUTBOUND_REQUESTS = 5;
 export const MAX_LOGO_ATTEMPTS = 2;
-const MAX_COLORS = 6;
 
 // The renderer draws logos only through <img>, where an SVG's scripts never run, so SVG is safe for logos alone
 const logoTypes = [...imageTypes, "image/svg+xml"] as const;
@@ -160,13 +161,9 @@ function cleanName(value: unknown) {
   return name.length > 0 && name.length <= BRAND_NAME_MAX ? name : null;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function jsonLdNodes(value: unknown): Record<string, unknown>[] {
   if (Array.isArray(value)) return value.flatMap(jsonLdNodes);
-  if (!isRecord(value)) return [];
+  if (!isPlainRecord(value)) return [];
   return [value, ...jsonLdNodes(value["@graph"])];
 }
 
@@ -205,7 +202,7 @@ function organizationName(blocks: string[]) {
 function jsonLdUrl(value: unknown): string | null {
   if (Array.isArray(value)) return jsonLdUrl(value[0]);
   if (typeof value === "string") return value;
-  if (isRecord(value) && typeof value.url === "string") return value.url;
+  if (isPlainRecord(value) && typeof value.url === "string") return value.url;
   return null;
 }
 
@@ -247,7 +244,7 @@ const secondLevelLabels = new Set([
 ]);
 
 function nameFromHostname(hostname: string) {
-  const bare = hostname.replace(/^\[|\]$/g, "");
+  const bare = bareHost(hostname);
   if (isIP(bare) !== 0) return bare;
   const labels = hostname
     .replace(/^www\./, "")
@@ -348,10 +345,10 @@ async function fetchManifest(
   } catch {
     return null;
   }
-  if (!isRecord(data)) return null;
+  if (!isPlainRecord(data)) return null;
   const icons = (Array.isArray(data.icons) ? data.icons : []).filter(
     (icon): icon is Record<string, unknown> =>
-      isRecord(icon) && typeof icon.src === "string",
+      isPlainRecord(icon) && typeof icon.src === "string",
   );
   const icon = largest(icons, (item) =>
     iconSize(typeof item.sizes === "string" ? item.sizes : undefined),
@@ -431,9 +428,7 @@ function webUrls(candidates: (string | URL | null | undefined)[], base: URL) {
   return candidates.flatMap((candidate) => {
     if (!candidate) return [];
     const url = URL.parse(candidate, base);
-    if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) {
-      return [];
-    }
+    if (!url || !isHttpUrl(url)) return [];
     if (seen.has(url.href)) return [];
     seen.add(url.href);
     return [url];
@@ -518,7 +513,7 @@ export async function importBrand(
           ...tileCandidates,
         ].flatMap((color) => normalizeColor(color) ?? []),
       ),
-    ].slice(0, MAX_COLORS);
+    ].slice(0, BRAND_COLORS_MAX);
 
     const logoImage = page.images.find((image) =>
       ["src", "alt", "class", "id"].some((key) =>

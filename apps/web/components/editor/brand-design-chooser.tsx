@@ -2,7 +2,6 @@
 
 import {
   brandedConfig,
-  SplashPage,
   templateIds,
   templates,
   type BrandProfile,
@@ -17,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/dialog";
+import { PortalThumbnail } from "@/components/preview/portal-thumbnail";
 import { deviceFrames } from "@/lib/device-frames";
 import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
@@ -78,24 +78,12 @@ const DesignPreview = memo(function DesignPreview({
       className="flex items-center justify-center rounded-md bg-editor-canvas"
       style={{ height: PREVIEW_BOX.height }}
     >
-      {/* Inert because the design's own inputs and button must never take focus or clicks here */}
-      <div
-        inert
-        aria-hidden
-        className="overflow-hidden rounded-md ring-1 ring-border"
-        style={{ width: frame.width * scale, height: frame.height * scale }}
-      >
-        <div
-          className="origin-top-left"
-          style={{ ...frame, transform: `scale(${scale})` }}
-        >
-          <SplashPage
-            config={brandedConfig(id, brand)}
-            device={device}
-            mode="published"
-          />
-        </div>
-      </div>
+      <PortalThumbnail
+        config={brandedConfig(id, brand)}
+        device={device}
+        width={frame.width * scale}
+        className="rounded-md ring-1 ring-border"
+      />
     </div>
   );
 });

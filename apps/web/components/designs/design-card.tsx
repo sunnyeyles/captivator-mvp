@@ -10,17 +10,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PortalThumbnail } from "@/components/preview/portal-thumbnail";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@repo/ui/alert-dialog";
 import { Button } from "@repo/ui/button";
 import {
   Dialog,
@@ -41,6 +32,7 @@ import { Label } from "@repo/ui/label";
 import {
   designRepository,
   designStatus,
+  replacesOtherLive,
   type Design,
   type LiveDesign,
 } from "@/lib/designs";
@@ -85,7 +77,7 @@ export function DesignCard({
   }
 
   function publish() {
-    if (live && live.designId !== design.id) {
+    if (replacesOtherLive(design, live)) {
       setDialog("replace");
       return;
     }
@@ -241,33 +233,17 @@ export function DesignCard({
         onConfirm={() => void run(() => designRepository().unpublish())}
       />
 
-      <AlertDialog
+      <ConfirmDialog
         open={dialog === "delete"}
         onOpenChange={(open) => setDialog(open ? "delete" : null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete “{design.name}”?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This design will be removed for good. This can’t be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={pending}
-              onClick={(event) => {
-                // Stays open until the delete finishes so the pending state is visible
-                event.preventDefault();
-                void run(() => designRepository().remove(design.id));
-              }}
-            >
-              {pending ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={`Delete “${design.name}”?`}
+        description="This design will be removed for good. This can’t be undone."
+        action="Delete"
+        variant="destructive"
+        pending={pending}
+        pendingAction="Deleting…"
+        onConfirm={() => void run(() => designRepository().remove(design.id))}
+      />
     </li>
   );
 }

@@ -14,6 +14,8 @@ export const brandDetails = ["name", "logo", "image", "colors"] as const;
 
 export const BRAND_NAME_MAX = 60;
 
+export const BRAND_COLORS_MAX = 6;
+
 /** What a website branding import extracts, and what branded designs are built from. */
 export const brandProfileSchema = z.object({
   // The page's final address after redirects
@@ -24,7 +26,7 @@ export const brandProfileSchema = z.object({
   image: z.string().nullable(),
   // Always null from the server, since the image is analysed in the browser
   imageRecommended: backgroundPositionRecommendationSchema.nullable(),
-  colors: z.array(colorSchema).max(6),
+  colors: z.array(colorSchema).max(BRAND_COLORS_MAX),
   primaryColor: colorSchema.nullable(),
   missing: z.array(z.enum(brandDetails)),
 });

@@ -11,7 +11,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ## Project
 
-A visual Wi-Fi splash page (captive portal) builder. `.scratch/editor/spec.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, Zustand and Lucide in `apps/web`, shadcn/ui in `packages/ui`, Zod in `packages/portal`, plus Vitest for tests. `packages/ui` also still holds the starter's stub `card` and `code` components.
+A visual Wi-Fi splash page (captive portal) builder. `.scratch/editor/spec.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, Zustand and Lucide in `apps/web`, shadcn/ui in `packages/ui`, Zod in `packages/portal`, plus Vitest for tests.
 
 ## Commands
 

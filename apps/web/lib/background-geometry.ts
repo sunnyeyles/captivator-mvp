@@ -21,8 +21,8 @@ export interface BackgroundGeometry {
   fit: BackgroundImage["fit"];
 }
 
-export const NUDGE_STEP = 1;
-export const LARGE_NUDGE_STEP = 10;
+const NUDGE_STEP = 1;
+const LARGE_NUDGE_STEP = 10;
 
 // Below half a page pixel of slack an axis has nothing to move, and float noise would make it jump
 const MIN_SLACK = 0.5;

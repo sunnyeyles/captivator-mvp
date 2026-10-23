@@ -2,7 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CONNECT_BUTTON_ID, defaultPortalConfig } from "../defaults";
 import { devices, type PortalConfig } from "../schema";
-import { LOGO_ELEMENT_ID, SplashPage } from "./splash-page";
+import { LOGO_ELEMENT_ID } from "../defaults";
+import { SplashPage } from "./splash-page";
 
 const config: PortalConfig = {
   texts: [

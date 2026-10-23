@@ -50,7 +50,6 @@ export function NewDesignDialog() {
           selectedId={pendingId ?? undefined}
           onSelect={(id) => void createFrom(id)}
           disabled={pendingId !== null}
-          thumbnailWidth={112}
         />
       </DialogContent>
     </Dialog>

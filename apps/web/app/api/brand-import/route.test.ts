@@ -1,6 +1,7 @@
 import { brandProfileSchema } from "@repo/portal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LookupAddress } from "@/lib/safe-fetch";
+import { PUBLIC_ADDRESS } from "@/lib/test-fixtures";
 import { POST } from "./route";
 
 const fakeLookup = vi.hoisted(() =>
@@ -25,7 +26,7 @@ function resolvesTo(address: string) {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fakeFetch);
-  resolvesTo("93.184.216.34");
+  resolvesTo(PUBLIC_ADDRESS);
 });
 
 afterEach(() => {

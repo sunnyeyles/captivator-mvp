@@ -3,6 +3,7 @@ import {
   CONNECT_BUTTON_ID,
   guestFieldDefaults,
   layoutDefaults,
+  LOGO_ELEMENT_ID,
 } from "../defaults";
 import { resolveBackgroundImage } from "../background";
 import { resolveForDevice } from "../overrides";
@@ -27,9 +28,6 @@ export interface SplashPageProps {
   selectedElementId?: string | null;
   onSelectElement?: (id: string | null) => void;
 }
-
-/** The element id the logo uses for canvas selection. */
-export const LOGO_ELEMENT_ID = "logo";
 
 const layoutByDevice: Record<
   Device,

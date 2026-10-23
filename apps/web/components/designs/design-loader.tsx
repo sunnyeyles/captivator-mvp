@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
-import { Button } from "@repo/ui/button";
+import {
+  FullPageLoading,
+  FullPageMessage,
+} from "@/components/full-page-status";
 import { designRepository, type Design, type LiveDesign } from "@/lib/designs";
 import { usePortalEditorStore } from "@/lib/editor-store";
 
@@ -51,30 +52,15 @@ export function DesignLoader({
   }, [id]);
 
   if (design === undefined) {
-    return (
-      <p
-        role="status"
-        className="grid h-dvh place-items-center text-sm text-muted-foreground"
-      >
-        Loading design…
-      </p>
-    );
+    return <FullPageLoading label="Loading design…" />;
   }
 
   if (design === null) {
     return (
-      <main className="grid h-dvh place-content-center justify-items-center gap-4 text-center">
-        <h1 className="text-lg font-semibold">Design not found</h1>
-        <p className="text-sm text-muted-foreground">
-          It may have been deleted, or the link is wrong.
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/">
-            <ArrowLeft aria-hidden />
-            Back to designs
-          </Link>
-        </Button>
-      </main>
+      <FullPageMessage
+        title="Design not found"
+        description="It may have been deleted, or the link is wrong."
+      />
     );
   }
 

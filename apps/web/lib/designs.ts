@@ -3,43 +3,45 @@ import {
   portalConfigSchema,
   templateIds,
   templates,
-  type BrandProfile,
   type PortalConfig,
   type TemplateId,
 } from "@repo/portal";
+import { z } from "zod";
 import { isDeepEqual } from "./equal";
+import { isObjectUrl, mapImageSrcs } from "./images";
 
-export interface Design {
-  id: string;
-  name: string;
-  templateId: TemplateId;
-  config: PortalConfig;
-  // Kept so template switches and resets in a reopened design stay branded
-  brand: BrandProfile | null;
-  updatedAt: string;
-}
+const designSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  templateId: z.enum(templateIds),
+  config: portalConfigSchema,
+  // Kept so template switches and resets in a reopened design stay branded, and absent on designs saved before branding existed
+  brand: brandProfileSchema.nullable().default(null),
+  updatedAt: z.string(),
+});
 
-export interface LiveDesign {
-  designId: string;
-  designName: string;
-  templateId: TemplateId;
-  config: PortalConfig;
-  publishedAt: string;
-}
+const liveDesignSchema = z.object({
+  designId: z.string(),
+  designName: z.string(),
+  templateId: z.enum(templateIds),
+  config: portalConfigSchema,
+  publishedAt: z.string(),
+});
+
+export type Design = z.infer<typeof designSchema>;
+export type LiveDesign = z.infer<typeof liveDesignSchema>;
+export type DesignContent = Pick<Design, "config" | "templateId" | "brand">;
 
 export type DesignStatus = "draft" | "live" | "live-changed";
 
 // The one boundary to a future backend, so the UI never touches storage directly
-export interface DesignRepository {
+interface DesignRepository {
   list(): Promise<Design[]>;
   get(id: string): Promise<Design | undefined>;
   create(templateId: TemplateId, name: string): Promise<Design>;
   rename(id: string, name: string): Promise<Design>;
   duplicate(id: string): Promise<Design>;
-  save(
-    id: string,
-    changes: Pick<Design, "config" | "templateId" | "brand">,
-  ): Promise<Design>;
+  save(id: string, changes: DesignContent): Promise<Design>;
   remove(id: string): Promise<void>;
   publish(id: string): Promise<LiveDesign>;
   unpublish(): Promise<void>;
@@ -47,56 +49,7 @@ export interface DesignRepository {
 }
 
 export const DESIGNS_KEY = "captivator.designs";
-export const LIVE_KEY = "captivator.live";
-
-function isTemplateId(value: unknown): value is TemplateId {
-  return templateIds.some((id) => id === value);
-}
-
-// Storage is shared with whatever else ran in this browser, so anything malformed is dropped
-function parseDesign(value: unknown): Design | null {
-  if (typeof value !== "object" || value === null) return null;
-  const record: Record<string, unknown> = { ...value };
-  const { id, name, templateId, updatedAt } = record;
-  const config = portalConfigSchema.safeParse(record.config);
-  // Designs saved before branding existed have no brand, which means unbranded
-  const brand = brandProfileSchema.nullable().safeParse(record.brand ?? null);
-  if (
-    typeof id !== "string" ||
-    typeof name !== "string" ||
-    typeof updatedAt !== "string" ||
-    !isTemplateId(templateId) ||
-    !config.success ||
-    !brand.success
-  ) {
-    return null;
-  }
-  return {
-    id,
-    name,
-    templateId,
-    config: config.data,
-    brand: brand.data,
-    updatedAt,
-  };
-}
-
-function parseLive(value: unknown): LiveDesign | undefined {
-  if (typeof value !== "object" || value === null) return undefined;
-  const record: Record<string, unknown> = { ...value };
-  const { designId, designName, templateId, publishedAt } = record;
-  const config = portalConfigSchema.safeParse(record.config);
-  if (
-    typeof designId !== "string" ||
-    typeof designName !== "string" ||
-    typeof publishedAt !== "string" ||
-    !isTemplateId(templateId) ||
-    !config.success
-  ) {
-    return undefined;
-  }
-  return { designId, designName, templateId, config: config.data, publishedAt };
-}
+const LIVE_KEY = "captivator.live";
 
 export function designStatus(
   design: Design,
@@ -104,6 +57,14 @@ export function designStatus(
 ): DesignStatus {
   if (live?.designId !== design.id) return "draft";
   return isDeepEqual(design.config, live.config) ? "live" : "live-changed";
+}
+
+// Publishing a design while another is live replaces it, so callers confirm first
+export function replacesOtherLive(
+  design: Design,
+  live: LiveDesign | undefined,
+) {
+  return live !== undefined && live.designId !== design.id;
 }
 
 async function blobToDataUrl(url: string) {
@@ -114,27 +75,11 @@ async function blobToDataUrl(url: string) {
   return `data:${blob.type};base64,${btoa(binary)}`;
 }
 
-async function persistentSrc(src: string) {
-  return src.startsWith("blob:") ? blobToDataUrl(src) : src;
-}
-
 // Object URLs die with the tab, so saved images are inlined as data URLs until real asset storage exists
-async function withPersistentImages(
-  config: PortalConfig,
-): Promise<PortalConfig> {
-  const { logo } = config.branding;
-  const { image } = config.background;
-  return {
-    ...config,
-    branding: {
-      ...config.branding,
-      logo: logo && { ...logo, src: await persistentSrc(logo.src) },
-    },
-    background: {
-      ...config.background,
-      image: image && { ...image, src: await persistentSrc(image.src) },
-    },
-  };
+function withPersistentImages(config: PortalConfig) {
+  return mapImageSrcs(config, (src) =>
+    isObjectUrl(src) ? blobToDataUrl(src) : src,
+  );
 }
 
 function isQuotaError(error: unknown) {
@@ -163,7 +108,11 @@ export class LocalStorageDesignRepository implements DesignRepository {
     try {
       const parsed: unknown = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
-      return parsed.flatMap((item: unknown) => parseDesign(item) ?? []);
+      // Storage is shared with whatever else ran in this browser, so anything malformed is dropped
+      return parsed.flatMap((item: unknown) => {
+        const design = designSchema.safeParse(item);
+        return design.success ? [design.data] : [];
+      });
     } catch {
       return [];
     }
@@ -177,7 +126,7 @@ export class LocalStorageDesignRepository implements DesignRepository {
     const raw = this.storage.getItem(LIVE_KEY);
     if (!raw) return undefined;
     try {
-      return parseLive(JSON.parse(raw));
+      return liveDesignSchema.safeParse(JSON.parse(raw)).data;
     } catch {
       return undefined;
     }
@@ -242,10 +191,7 @@ export class LocalStorageDesignRepository implements DesignRepository {
     });
   }
 
-  async save(
-    id: string,
-    changes: Pick<Design, "config" | "templateId" | "brand">,
-  ) {
+  async save(id: string, changes: DesignContent) {
     const config = await withPersistentImages(changes.config);
     try {
       return this.put({

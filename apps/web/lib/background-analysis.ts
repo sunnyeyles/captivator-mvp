@@ -60,8 +60,8 @@ async function recommend(
   }
 }
 
-/** Recommends a cover position for each device from an image's pixels, or null when it can't be analysed within 2 seconds. */
-export async function analyseBackgroundImage(
+// Gives up after 2 seconds and returns null, so a slow or broken image never blocks the upload
+async function analyseBackgroundImage(
   image: Blob,
 ): Promise<BackgroundPositionRecommendation | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;

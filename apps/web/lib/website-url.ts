@@ -2,7 +2,16 @@ import { z } from "zod";
 
 const WEBSITE_URL_MAX = 2048;
 
-const INVALID_MESSAGE = "Enter a website address like yourbusiness.com";
+export const INVALID_MESSAGE = "Enter a website address like yourbusiness.com";
+
+export function isHttpUrl(url: URL) {
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
+// URL keeps IPv6 hosts in brackets, which address parsers reject
+export function bareHost(hostname: string) {
+  return hostname.replace(/^\[|\]$/g, "");
+}
 
 // A single-label host such as "localhost" can never be a customer's public website
 function isWebsiteHost(hostname: string) {
@@ -23,7 +32,7 @@ export const websiteUrlSchema = z
     if (
       !url ||
       withScheme.length > WEBSITE_URL_MAX ||
-      (url.protocol !== "http:" && url.protocol !== "https:") ||
+      !isHttpUrl(url) ||
       url.username ||
       url.password ||
       !isWebsiteHost(url.hostname)

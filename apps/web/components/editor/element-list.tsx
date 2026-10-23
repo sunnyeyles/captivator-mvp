@@ -2,7 +2,6 @@
 
 import {
   CONNECT_BUTTON_ID,
-  guestFieldDefaults,
   LOGO_ELEMENT_ID,
   MAX_GUEST_FIELDS,
   type GuestFieldType,
@@ -22,6 +21,7 @@ import {
 import type { ReactNode } from "react";
 import { Button } from "@repo/ui/button";
 import { usePortalEditorStore } from "@/lib/editor-store";
+import { fieldName, textName } from "@/lib/selected-element";
 import { LogoControls } from "./logo-controls";
 
 const guestFieldIcons: Record<GuestFieldType, LucideIcon> = {
@@ -85,12 +85,12 @@ export function ElementList() {
           <ElementRow
             key={text.id}
             icon={Type}
-            name={text.text.trim() || "Empty text"}
+            name={textName(text)}
             onSelect={() => selectElement(text.id)}
           />
         ))}
         {fields.map((field, index) => {
-          const name = field.label || guestFieldDefaults[field.type].label;
+          const name = fieldName(field);
           return (
             <ElementRow
               key={field.id}

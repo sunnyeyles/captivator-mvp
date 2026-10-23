@@ -6,6 +6,7 @@ import {
   type SafeFetchDeps,
   type SafeFetchOptions,
 } from "./safe-fetch";
+import { fakeDeps, htmlResponse as html } from "./test-fixtures";
 
 const options: SafeFetchOptions = {
   accept: "text/html",
@@ -14,38 +15,8 @@ const options: SafeFetchOptions = {
   timeoutMs: 8000,
 };
 
-const publicAddress = [{ address: "93.184.216.34", family: 4 }];
-
-function html(body = "<title>Acme</title>", init: ResponseInit = {}) {
-  return new Response(body, {
-    status: 200,
-    headers: { "content-type": "text/html; charset=utf-8" },
-    ...init,
-  });
-}
-
 function redirect(location: string, status = 302) {
   return new Response(null, { status, headers: { location } });
-}
-
-function fakeDeps(
-  responses: Record<string, () => Response>,
-  addresses: Record<string, string[]> = {},
-) {
-  const fetch = vi.fn<SafeFetchDeps["fetch"]>(async (url) => {
-    const respond = responses[url];
-    if (!respond) throw new TypeError("fetch failed");
-    return respond();
-  });
-  const lookup = vi.fn<SafeFetchDeps["lookup"]>(async (hostname) => {
-    const found = addresses[hostname];
-    if (!found) return publicAddress;
-    return found.map((address) => ({
-      address,
-      family: address.includes(":") ? 6 : 4,
-    }));
-  });
-  return { fetch, lookup };
 }
 
 function fetchFrom(url: string, deps: SafeFetchDeps, overrides = {}) {

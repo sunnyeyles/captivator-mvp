@@ -49,7 +49,6 @@ export function ChangeDesignDialog() {
               <TemplateGrid
                 selectedId={templateId}
                 brand={brand}
-                thumbnailWidth={112}
                 onSelect={(id) => {
                   setTemplate(id);
                   setOpen(false);

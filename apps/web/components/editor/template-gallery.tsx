@@ -15,13 +15,11 @@ export function TemplateGrid({
   onSelect,
   brand = null,
   disabled = false,
-  thumbnailWidth = 72,
 }: {
   selectedId?: TemplateId;
   onSelect: (id: TemplateId) => void;
   brand?: BrandProfile | null;
   disabled?: boolean;
-  thumbnailWidth?: number;
 }) {
   return (
     <ul className="grid grid-cols-3 gap-2">
@@ -32,7 +30,7 @@ export function TemplateGrid({
           <li key={id} className="relative grid justify-items-center gap-1">
             <PortalThumbnail
               config={brandedConfig(id, brand)}
-              width={thumbnailWidth}
+              width={112}
               className={`rounded-md ${selected ? "ring-2 ring-primary" : "ring-1 ring-border"}`}
             />
             {/* The stretched hit area makes the whole card clickable without nesting the preview's button inside this one */}

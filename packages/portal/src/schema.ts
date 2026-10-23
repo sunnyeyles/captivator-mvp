@@ -6,6 +6,20 @@ export const colorSchema = z
   .string()
   .regex(/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i, "Enter a hex colour like #1c1917");
 
+function rangeSchema(min: number, max: number, noun: string) {
+  const message = `Use a ${noun} from ${min} to ${max}`;
+  return z
+    .number()
+    .int("Use a whole number")
+    .min(min, message)
+    .max(max, message);
+}
+
+function isUniqueBy<Item>(key: keyof Item) {
+  return (items: Item[]) =>
+    new Set(items.map((item) => item[key])).size === items.length;
+}
+
 export const FONT_SIZE_MIN = 12;
 export const FONT_SIZE_MAX = 96;
 
@@ -17,42 +31,26 @@ export const SPACE_ABOVE_MIN = 0;
 export const SPACE_ABOVE_MAX = 96;
 
 // Extra space between an element and the one before it, on top of the device layout's gap
-const spaceAboveSchema = z
-  .number()
-  .int("Use a whole number")
-  .min(
-    SPACE_ABOVE_MIN,
-    `Use a spacing from ${SPACE_ABOVE_MIN} to ${SPACE_ABOVE_MAX}`,
-  )
-  .max(
-    SPACE_ABOVE_MAX,
-    `Use a spacing from ${SPACE_ABOVE_MIN} to ${SPACE_ABOVE_MAX}`,
-  );
+const spaceAboveSchema = rangeSchema(
+  SPACE_ABOVE_MIN,
+  SPACE_ABOVE_MAX,
+  "spacing",
+);
 
 export const ELEMENT_WIDTH_MIN = 25;
 export const ELEMENT_WIDTH_MAX = 100;
 
 // A percentage of the form column, so one value suits every device width
-const elementWidthSchema = z
-  .number()
-  .int("Use a whole number")
-  .min(
-    ELEMENT_WIDTH_MIN,
-    `Use a width from ${ELEMENT_WIDTH_MIN} to ${ELEMENT_WIDTH_MAX}`,
-  )
-  .max(
-    ELEMENT_WIDTH_MAX,
-    `Use a width from ${ELEMENT_WIDTH_MIN} to ${ELEMENT_WIDTH_MAX}`,
-  );
+const elementWidthSchema = rangeSchema(
+  ELEMENT_WIDTH_MIN,
+  ELEMENT_WIDTH_MAX,
+  "width",
+);
 
 const textBaseSchema = z.object({
   id: z.string().min(1),
   text: z.string(),
-  fontSize: z
-    .number()
-    .int("Use a whole number")
-    .min(FONT_SIZE_MIN, `Use a size from ${FONT_SIZE_MIN} to ${FONT_SIZE_MAX}`)
-    .max(FONT_SIZE_MAX, `Use a size from ${FONT_SIZE_MIN} to ${FONT_SIZE_MAX}`),
+  fontSize: rangeSchema(FONT_SIZE_MIN, FONT_SIZE_MAX, "size"),
   color: colorSchema,
   fontWeight: z.union(fontWeights.map((weight) => z.literal(weight))),
   textAlign: z.enum(textAligns),
@@ -86,18 +84,11 @@ export const LOGO_MAX_HEIGHT_MAX = 200;
 const logoBaseSchema = z.object({
   src: imageSrcSchema,
   alt: z.string(),
-  maxHeight: z
-    .number()
-    .int("Use a whole number")
-    .min(
-      LOGO_MAX_HEIGHT_MIN,
-      `Use a height from ${LOGO_MAX_HEIGHT_MIN} to ${LOGO_MAX_HEIGHT_MAX}`,
-    )
-    .max(
-      LOGO_MAX_HEIGHT_MAX,
-      `Use a height from ${LOGO_MAX_HEIGHT_MIN} to ${LOGO_MAX_HEIGHT_MAX}`,
-    )
-    .optional(),
+  maxHeight: rangeSchema(
+    LOGO_MAX_HEIGHT_MIN,
+    LOGO_MAX_HEIGHT_MAX,
+    "height",
+  ).optional(),
   spaceAbove: spaceAboveSchema.optional(),
 });
 
@@ -213,17 +204,7 @@ const buttonBaseSchema = z.object({
     .refine((label) => label.trim().length > 0, "Enter a button label"),
   backgroundColor: colorSchema,
   textColor: colorSchema,
-  borderRadius: z
-    .number()
-    .int("Use a whole number")
-    .min(
-      BUTTON_RADIUS_MIN,
-      `Use a radius from ${BUTTON_RADIUS_MIN} to ${BUTTON_RADIUS_MAX}`,
-    )
-    .max(
-      BUTTON_RADIUS_MAX,
-      `Use a radius from ${BUTTON_RADIUS_MIN} to ${BUTTON_RADIUS_MAX}`,
-    ),
+  borderRadius: rangeSchema(BUTTON_RADIUS_MIN, BUTTON_RADIUS_MAX, "radius"),
   width: elementWidthSchema,
   spaceAbove: spaceAboveSchema.optional(),
 });
@@ -238,24 +219,13 @@ export const buttonSchema = buttonBaseSchema.extend({
 export const portalConfigSchema = z.object({
   texts: z
     .array(textElementSchema)
-    .refine(
-      (texts) => new Set(texts.map((text) => text.id)).size === texts.length,
-      "Text ids must be unique",
-    ),
+    .refine(isUniqueBy("id"), "Text ids must be unique"),
   background: backgroundSchema,
   fields: z
     .array(guestFieldSchema)
     .max(MAX_GUEST_FIELDS, `Use at most ${MAX_GUEST_FIELDS} guest fields`)
-    .refine(
-      (fields) =>
-        new Set(fields.map((field) => field.id)).size === fields.length,
-      "Guest field ids must be unique",
-    )
-    .refine(
-      (fields) =>
-        new Set(fields.map((field) => field.type)).size === fields.length,
-      "Each guest field type can be used once",
-    ),
+    .refine(isUniqueBy("id"), "Guest field ids must be unique")
+    .refine(isUniqueBy("type"), "Each guest field type can be used once"),
   button: buttonSchema,
   branding: brandingSchema,
 });

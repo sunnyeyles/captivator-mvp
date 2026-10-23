@@ -7,16 +7,13 @@ import {
   buttonSchema,
   ELEMENT_WIDTH_MAX,
   ELEMENT_WIDTH_MIN,
-  layoutDefaults,
   resolveForDevice,
-  SPACE_ABOVE_MAX,
-  SPACE_ABOVE_MIN,
   type ConnectButton,
 } from "@repo/portal";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
 import { LayoutSection } from "./layout-section";
-import { SliderField } from "./slider-field";
+import { SliderField, SpaceAboveSlider } from "./slider-field";
 import { ValidatedField } from "./validated-field";
 
 export function ButtonControls({ button }: { button: ConnectButton }) {
@@ -62,12 +59,8 @@ export function ButtonControls({ button }: { button: ConnectButton }) {
           max={BUTTON_RADIUS_MAX}
           onValueChange={(borderRadius) => updateButton({ borderRadius })}
         />
-        <SliderField
-          label="Space above"
-          unit="px"
-          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-          min={SPACE_ABOVE_MIN}
-          max={SPACE_ABOVE_MAX}
+        <SpaceAboveSlider
+          value={resolved.spaceAbove}
           onValueChange={(spaceAbove) => updateButton({ spaceAbove })}
         />
       </LayoutSection>

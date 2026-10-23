@@ -1,5 +1,6 @@
 "use client";
 
+import { layoutDefaults, SPACE_ABOVE_MAX, SPACE_ABOVE_MIN } from "@repo/portal";
 import { useId } from "react";
 import { Label } from "@repo/ui/label";
 import { Slider } from "@repo/ui/slider";
@@ -10,6 +11,7 @@ interface SliderFieldProps {
   value: number;
   min: number;
   max: number;
+  step?: number;
   onValueChange: (value: number) => void;
 }
 
@@ -19,6 +21,7 @@ export function SliderField({
   value,
   min,
   max,
+  step = 1,
   onValueChange,
 }: SliderFieldProps) {
   const labelId = useId();
@@ -36,10 +39,29 @@ export function SliderField({
         aria-labelledby={labelId}
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={[value]}
         onValueChange={([next = value]) => onValueChange(next)}
       />
     </div>
+  );
+}
+
+export function SpaceAboveSlider({
+  value,
+  onValueChange,
+}: {
+  value: number | undefined;
+  onValueChange: (spaceAbove: number) => void;
+}) {
+  return (
+    <SliderField
+      label="Space above"
+      unit="px"
+      value={value ?? layoutDefaults.spaceAbove}
+      min={SPACE_ABOVE_MIN}
+      max={SPACE_ABOVE_MAX}
+      onValueChange={onValueChange}
+    />
   );
 }
