@@ -10,6 +10,11 @@ export interface Size {
   height: number;
 }
 
+export interface Rect extends Size {
+  x: number;
+  y: number;
+}
+
 export interface BackgroundGeometry {
   frame: Size;
   natural: Size;
@@ -85,5 +90,20 @@ export function nudgePosition(
   return {
     x: nudge(position.x, direction.x, x),
     y: nudge(position.y, direction.y, y),
+  };
+}
+
+function cropAxis(offset: number, cropped: number, analysed: number) {
+  const overflow = analysed - cropped;
+  // Without overflow the axis can't move, so centred is the only stable value
+  if (overflow <= 1) return 50;
+  return clampPosition((offset / overflow) * 100);
+}
+
+/** The cover position that shows a crop of an image, with the crop measured in the analysed image's pixels. */
+export function cropPosition(crop: Rect, analysed: Size): BackgroundPosition {
+  return {
+    x: cropAxis(crop.x, crop.width, analysed.width),
+    y: cropAxis(crop.y, crop.height, analysed.height),
   };
 }

@@ -1,15 +1,10 @@
 "use client";
 
-import { SplashPage, type Device } from "@repo/portal";
+import { SplashPage } from "@repo/portal";
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { deviceFrames } from "@/lib/device-frames";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { RepositionLayer } from "./reposition-layer";
-
-const frameSizes: Record<Device, { width: number; height: number }> = {
-  desktop: { width: 1280, height: 800 },
-  tablet: { width: 820, height: 1180 },
-  mobile: { width: 390, height: 844 },
-};
 
 const WORKSPACE_PADDING = 32;
 
@@ -67,7 +62,7 @@ export function DesignCanvas() {
     return () => observer.disconnect();
   }, []);
 
-  const frame = frameSizes[deviceMode];
+  const frame = deviceFrames[deviceMode];
   // Scale the whole frame rather than resizing it, so the design's own layout never changes
   const scale = workspace
     ? Math.min(
