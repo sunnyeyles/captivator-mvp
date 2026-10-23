@@ -1,5 +1,6 @@
 import {
   backgroundSchema,
+  brandedConfig,
   brandingSchema,
   buttonSchema,
   clearDeviceOverride,
@@ -12,6 +13,7 @@ import {
   setDeviceOverride,
   templates,
   textElementSchema,
+  type BrandProfile,
   type ConnectButton,
   type Device,
   type GuestField,
@@ -32,6 +34,7 @@ export type CanvasMode = "edit" | "preview";
 export interface HistoryEntry {
   config: PortalConfig;
   templateId: TemplateId;
+  brand: BrandProfile | null;
 }
 
 export interface PortalEditorState extends HistoryEntry {
@@ -40,10 +43,14 @@ export interface PortalEditorState extends HistoryEntry {
   deviceMode: Device;
   canvasMode: CanvasMode;
   selectedElementId: string | null;
+  // The latest import while the customer is choosing a design, kept out of history because it never changes the design
+  brandDraft: BrandProfile | null;
 }
 
 interface PortalEditorActions {
   setTemplate: (id: TemplateId) => void;
+  applyBrandedDesign: (templateId: TemplateId, brand: BrandProfile) => void;
+  setBrandDraft: (brand: BrandProfile | null) => void;
   reset: () => void;
   undo: () => void;
   redo: () => void;
@@ -99,11 +106,13 @@ export const HISTORY_LIMIT = 100;
 export const initialEditorState: PortalEditorState = {
   config: templates.minimal.config,
   templateId: "minimal",
+  brand: null,
   past: [],
   future: [],
   deviceMode: "desktop",
   canvasMode: "edit",
   selectedElementId: null,
+  brandDraft: null,
 };
 
 function nextId(prefix: string, items: { id: string }[]) {
@@ -182,19 +191,27 @@ function keptSelection(config: PortalConfig, id: string | null) {
 }
 
 function historyEntry(state: PortalEditorState): HistoryEntry {
-  return { config: state.config, templateId: state.templateId };
+  return {
+    config: state.config,
+    templateId: state.templateId,
+    brand: state.brand,
+  };
 }
 
 // Actions rebuild the config even when nothing changed, so history compares by value
 function isUnchanged(state: HistoryEntry, next: Partial<HistoryEntry>) {
   return (
     (next.templateId ?? state.templateId) === state.templateId &&
+    (next.brand === undefined || isDeepEqual(next.brand, state.brand)) &&
     isDeepEqual(next.config, state.config)
   );
 }
 
 export function isAtTemplateDefaults(state: PortalEditorState) {
-  return isDeepEqual(state.config, templates[state.templateId].config);
+  return isDeepEqual(
+    state.config,
+    brandedConfig(state.templateId, state.brand),
+  );
 }
 
 // A pause this long between edits to the same target starts a new undo step
@@ -278,7 +295,7 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
 
     setTemplate: (id) =>
       set((state) => {
-        const { config } = templates[id];
+        const config = brandedConfig(id, state.brand);
         return {
           config,
           templateId: id,
@@ -286,9 +303,22 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
         };
       }),
 
+    applyBrandedDesign: (templateId, brand) =>
+      set((state) => {
+        const config = brandedConfig(templateId, brand);
+        return {
+          config,
+          templateId,
+          brand,
+          selectedElementId: keptSelection(config, state.selectedElementId),
+        };
+      }),
+
+    setBrandDraft: (brandDraft) => set({ brandDraft }),
+
     reset: () =>
       set((state) => {
-        const { config } = templates[state.templateId];
+        const config = brandedConfig(state.templateId, state.brand);
         return {
           config,
           selectedElementId: keptSelection(config, state.selectedElementId),

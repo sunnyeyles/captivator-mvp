@@ -1,9 +1,11 @@
 import {
+  brandedConfig,
   defaultBackgroundImageSettings,
   defaultPortalConfig,
   defaultTextStyle,
   LOGO_ELEMENT_ID,
   templates,
+  type BrandProfile,
 } from "@repo/portal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -575,7 +577,10 @@ describe("no-op edits", () => {
     ["updateButton", () => getState().updateButton({})],
     ["updateBackground", () => getState().updateBackground({ type: "color" })],
     ["updateBranding", () => getState().updateBranding({})],
-    ["setTemplate to the current template", () => getState().setTemplate("minimal")],
+    [
+      "setTemplate to the current template",
+      () => getState().setTemplate("minimal"),
+    ],
   ])("%s leaves the config and history untouched", (_name, edit) => {
     const { config } = getState();
     edit();
@@ -967,5 +972,112 @@ describe("layout overrides on fields, the button and the logo", () => {
     expect(getState().config.texts[0]!.overrides).toEqual({
       mobile: { fontSize: 40 },
     });
+  });
+});
+
+describe("branded designs", () => {
+  const brand: BrandProfile = {
+    sourceUrl: "https://acme.example/",
+    name: "Acme Coffee",
+    logo: null,
+    image: null,
+    colors: [],
+    primaryColor: null,
+    missing: ["logo", "image", "colors"],
+  };
+  const otherBrand: BrandProfile = { ...brand, name: "Bean There" };
+
+  it("starts with no brand and no draft", () => {
+    expect(getState().brand).toBeNull();
+    expect(getState().brandDraft).toBeNull();
+  });
+
+  it("applies a branded design as one undo step", () => {
+    getState().applyBrandedDesign("event", brand);
+
+    expect(getState().config).toEqual(brandedConfig("event", brand));
+    expect(getState().templateId).toBe("event");
+    expect(getState().brand).toBe(brand);
+    expect(getState().past).toHaveLength(1);
+
+    getState().undo();
+    expect(getState().config).toBe(templates.minimal.config);
+    expect(getState().templateId).toBe("minimal");
+    expect(getState().brand).toBeNull();
+  });
+
+  it("restores the brand on undo and redo", () => {
+    getState().applyBrandedDesign("minimal", brand);
+    getState().applyBrandedDesign("corporate", otherBrand);
+    getState().undo();
+
+    expect(getState().brand).toBe(brand);
+    expect(getState().config).toEqual(brandedConfig("minimal", brand));
+
+    getState().redo();
+    expect(getState().brand).toBe(otherBrand);
+    expect(getState().templateId).toBe("corporate");
+  });
+
+  it("ignores applying the design that is already applied", () => {
+    getState().applyBrandedDesign("event", brand);
+    getState().applyBrandedDesign("event", { ...brand });
+
+    expect(getState().past).toHaveLength(1);
+  });
+
+  it("keeps a selection that still exists in the branded design", () => {
+    getState().selectElement("welcome-heading");
+    getState().applyBrandedDesign("minimal", brand);
+    expect(getState().selectedElementId).toBe("welcome-heading");
+
+    getState().applyBrandedDesign("event", brand);
+    expect(getState().selectedElementId).toBeNull();
+  });
+
+  it("keeps the brand when switching template", () => {
+    getState().applyBrandedDesign("minimal", brand);
+    getState().setTemplate("corporate");
+
+    expect(getState().config).toEqual(brandedConfig("corporate", brand));
+    expect(getState().brand).toBe(brand);
+  });
+
+  it("resets to the branded version of the template", () => {
+    getState().applyBrandedDesign("event", brand);
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().reset();
+
+    expect(getState().config).toEqual(brandedConfig("event", brand));
+  });
+
+  it("compares template defaults against the branded design", () => {
+    getState().applyBrandedDesign("corporate", brand);
+    expect(isAtTemplateDefaults(getState())).toBe(true);
+
+    getState().updateButton({ label: "Join" });
+    expect(isAtTemplateDefaults(getState())).toBe(false);
+  });
+
+  it("never changes the design or history from the draft", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    const { config, past, future } = getState();
+
+    getState().setBrandDraft(brand);
+    getState().setBrandDraft({ ...brand, primaryColor: "#123456" });
+
+    expect(getState().brandDraft?.primaryColor).toBe("#123456");
+    expect(getState().config).toBe(config);
+    expect(getState().past).toBe(past);
+    expect(getState().future).toBe(future);
+    expect(getState().brand).toBeNull();
+  });
+
+  it("keeps the draft through undo and redo", () => {
+    getState().setBrandDraft(brand);
+    getState().applyBrandedDesign("event", brand);
+    getState().undo();
+
+    expect(getState().brandDraft).toBe(brand);
   });
 });
