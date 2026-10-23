@@ -1,8 +1,9 @@
 import {
+  brandedConfig,
   brandProfileSchema,
   portalConfigSchema,
   templateIds,
-  templates,
+  type BrandProfile,
   type PortalConfig,
   type TemplateId,
 } from "@repo/portal";
@@ -38,7 +39,11 @@ export type DesignStatus = "draft" | "live" | "live-changed";
 interface DesignRepository {
   list(): Promise<Design[]>;
   get(id: string): Promise<Design | undefined>;
-  create(templateId: TemplateId, name: string): Promise<Design>;
+  create(
+    templateId: TemplateId,
+    name: string,
+    brand?: BrandProfile | null,
+  ): Promise<Design>;
   rename(id: string, name: string): Promise<Design>;
   duplicate(id: string): Promise<Design>;
   save(id: string, changes: DesignContent): Promise<Design>;
@@ -154,13 +159,17 @@ export class LocalStorageDesignRepository implements DesignRepository {
     return this.read().find((design) => design.id === id);
   }
 
-  async create(templateId: TemplateId, name: string) {
+  async create(
+    templateId: TemplateId,
+    name: string,
+    brand: BrandProfile | null = null,
+  ) {
     return this.put({
       id: crypto.randomUUID(),
       name,
       templateId,
-      config: templates[templateId].config,
-      brand: null,
+      config: brandedConfig(templateId, brand),
+      brand,
       updatedAt: new Date().toISOString(),
     });
   }

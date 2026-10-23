@@ -45,6 +45,18 @@ describe("LocalStorageDesignRepository", () => {
     expect(await repository.list()).toEqual([design]);
   });
 
+  it("creates a branded design that keeps its brand", async () => {
+    const design = await repository.create("event", "Acme", acmeBrand);
+
+    expect(design).toMatchObject({
+      name: "Acme",
+      templateId: "event",
+      config: brandedConfig("event", acmeBrand),
+      brand: acmeBrand,
+    });
+    expect(await repository.get(design.id)).toEqual(design);
+  });
+
   it("returns nothing for an unknown id", async () => {
     await repository.create("minimal", "Minimal");
 
