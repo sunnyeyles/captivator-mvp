@@ -76,3 +76,10 @@ export {
   type PortalTemplate,
   type TemplateId,
 } from "./templates";
+export {
+  BRAND_NAME_MAX,
+  brandDetails,
+  brandedConfig,
+  brandProfileSchema,
+  type BrandProfile,
+} from "./brand";

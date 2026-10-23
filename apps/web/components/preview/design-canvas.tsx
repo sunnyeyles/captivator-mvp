@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { RepositionLayer } from "./reposition-layer";
 
-const frameSizes: Record<Device, { width: number; height: number }> = {
+export const frameSizes: Record<Device, { width: number; height: number }> = {
   desktop: { width: 1280, height: 800 },
   tablet: { width: 820, height: 1180 },
   mobile: { width: 390, height: 844 },
