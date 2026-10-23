@@ -3,6 +3,7 @@ import { CanvasModeSwitcher } from "./canvas-mode-switcher";
 import { CurrentDesignStatus } from "./current-design-status";
 import { DesignNameField } from "./design-name-field";
 import { DeviceModeSwitcher } from "./device-mode-switcher";
+import { EditorMenu } from "./editor-menu";
 import { HistoryControls } from "./history-controls";
 import { SaveControls } from "./save-controls";
 
@@ -16,9 +17,10 @@ export function EditorToolbar() {
       </div>
       <DeviceModeSwitcher />
       <div className="flex items-center gap-2 lg:justify-self-end">
-        <SaveControls />
         <HistoryControls />
         <CanvasModeSwitcher />
+        <SaveControls />
+        <EditorMenu />
       </div>
     </header>
   );

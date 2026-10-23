@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Edit/Preview becomes one Preview toggle
-- [ ] Reset to template lives in the `…` menu and is disabled at template defaults
+- [x] Edit/Preview becomes one Preview toggle
+- [x] Reset to template lives in the `…` menu and is disabled at template defaults

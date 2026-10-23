@@ -1,35 +1,22 @@
 "use client";
 
-import { Eye, Pencil } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
-import { usePortalEditorStore, type CanvasMode } from "@/lib/editor-store";
-
-function isCanvasMode(value: string): value is CanvasMode {
-  return value === "edit" || value === "preview";
-}
+import { Eye } from "lucide-react";
+import { Toggle } from "@repo/ui/toggle";
+import { usePortalEditorStore } from "@/lib/editor-store";
 
 export function CanvasModeSwitcher() {
   const canvasMode = usePortalEditorStore((state) => state.canvasMode);
   const setCanvasMode = usePortalEditorStore((state) => state.setCanvasMode);
 
   return (
-    <ToggleGroup
-      type="single"
+    <Toggle
       variant="outline"
       size="sm"
-      aria-label="Canvas mode"
-      value={canvasMode}
-      // Radix emits an empty string when the active item is clicked again, which would leave no mode selected
-      onValueChange={(value) => isCanvasMode(value) && setCanvasMode(value)}
+      pressed={canvasMode === "preview"}
+      onPressedChange={(pressed) => setCanvasMode(pressed ? "preview" : "edit")}
     >
-      <ToggleGroupItem value="edit" aria-label="Edit">
-        <Pencil />
-        Edit
-      </ToggleGroupItem>
-      <ToggleGroupItem value="preview" aria-label="Preview">
-        <Eye />
-        Preview
-      </ToggleGroupItem>
-    </ToggleGroup>
+      <Eye />
+      Preview
+    </Toggle>
   );
 }

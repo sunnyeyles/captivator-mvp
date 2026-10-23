@@ -117,7 +117,8 @@ The editor contains three main areas.
 
 - Application identity
 - Desktop/Tablet/Mobile mode switcher
-- Optional reset, undo and redo controls
+- Undo and redo, a Preview toggle, Save and Publish
+- A menu holding Reset to template, away from undo so it is not hit by mistake
 
 ### Properties Sidebar
 

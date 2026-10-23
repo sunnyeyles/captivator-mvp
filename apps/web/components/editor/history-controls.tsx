@@ -1,9 +1,9 @@
 "use client";
 
-import { Redo2, RotateCcw, Undo2 } from "lucide-react";
+import { Redo2, Undo2 } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@repo/ui/button";
-import { isAtTemplateDefaults, usePortalEditorStore } from "@/lib/editor-store";
+import { usePortalEditorStore } from "@/lib/editor-store";
 
 function isEditable(target: EventTarget | null) {
   return (
@@ -38,10 +38,8 @@ function useHistoryShortcuts() {
 export function HistoryControls() {
   const canUndo = usePortalEditorStore((state) => state.past.length > 0);
   const canRedo = usePortalEditorStore((state) => state.future.length > 0);
-  const atTemplateDefaults = usePortalEditorStore(isAtTemplateDefaults);
   const undo = usePortalEditorStore((state) => state.undo);
   const redo = usePortalEditorStore((state) => state.redo);
-  const reset = usePortalEditorStore((state) => state.reset);
   useHistoryShortcuts();
 
   return (
@@ -65,16 +63,6 @@ export function HistoryControls() {
         onClick={redo}
       >
         <Redo2 />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Reset to template"
-        title="Reset to template"
-        disabled={atTemplateDefaults}
-        onClick={reset}
-      >
-        <RotateCcw />
       </Button>
     </div>
   );
