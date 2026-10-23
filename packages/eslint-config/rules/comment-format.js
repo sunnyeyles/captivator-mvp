@@ -2,8 +2,8 @@
 const DIRECTIVE =
   /^\s*(eslint-disable|eslint-enable|eslint\s+[\w@/-]+\s*:|globals?\s+[\w$]+(\s*:\s*\w+)?(\s*,\s*[\w$]+(\s*:\s*\w+)?)*\s*$|@ts-|\/ <reference|[#@]__(PURE|NO_SIDE_EFFECTS)__|(webpack|turbopack)[A-Z]\w*\s*:|@vite-ignore)/;
 const TRAILING_PERIOD = /(^|[^.])\.$/;
-const MARKER = /\b(TODO|FIXME|XXX|HACK)\b/;
-const TICKETED_MARKER = /\b(TODO|FIXME|XXX|HACK)\(\.scratch\/[^)]+\)/;
+// Each marker needs its own ticket, so one ticketed TODO can't cover a second
+const UNTICKETED_MARKER = /\b(TODO|FIXME|XXX|HACK)\b(?!\(\.scratch\/[^)]+\))/;
 const DIVIDER = /([-=*#_~+/\\])\1{3,}/;
 const LOWERCASE_START = /^[a-z]/;
 // A lowercase start is fine when the comment opens with code, such as an identifier, call or path
@@ -47,6 +47,12 @@ export const commentFormat = {
       );
     }
 
+    function checkMarkers(comment, value) {
+      if (UNTICKETED_MARKER.test(value)) {
+        context.report({ loc: comment.loc, messageId: "todoWithoutTicket" });
+      }
+    }
+
     function checkText(comment, value) {
       if (DIVIDER.test(value)) {
         context.report({ loc: comment.loc, messageId: "divider" });
@@ -55,9 +61,7 @@ export const commentFormat = {
       if (TRAILING_PERIOD.test(value)) {
         context.report({ loc: comment.loc, messageId: "trailingPeriod" });
       }
-      if (MARKER.test(value) && !TICKETED_MARKER.test(value)) {
-        context.report({ loc: comment.loc, messageId: "todoWithoutTicket" });
-      }
+      checkMarkers(comment, value);
       if (LOWERCASE_START.test(value) && !CODE_START.test(value)) {
         context.report({ loc: comment.loc, messageId: "sentenceCase" });
       }
@@ -69,6 +73,7 @@ export const commentFormat = {
     }
 
     function checkJsdoc(comment) {
+      checkMarkers(comment, comment.value);
       const lines = comment.value
         .split("\n")
         .map((line) => line.replace(/^\s*\*+\s?/, "").trim());

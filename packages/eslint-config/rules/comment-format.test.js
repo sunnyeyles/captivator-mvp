@@ -21,6 +21,7 @@ ruleTester.run("comment-format", commentFormat, {
     "// Waits for the upload...\nconst a = 1;",
     "// TODO(.scratch/editor/issues/03): drop once the store migrates\nconst a = 1;",
     "/** Exported API docs end in a period. */\nexport const a = 1;",
+    "/** Parses the config, see TODO(.scratch/editor/issues/03). */\nexport const a = 1;",
     "/**\n * Multi-line JSDoc.\n */\nexport const a = 1;",
     "// eslint-disable-next-line no-console -- the CLI prints to stdout.\nconsole.log(1);",
     "// Explains the directive below\n// eslint-disable-next-line no-console\nconsole.log(1);",
@@ -54,6 +55,14 @@ ruleTester.run("comment-format", commentFormat, {
     },
     {
       code: "// TODO: fix this\nconst a = 1;",
+      errors: [{ messageId: "todoWithoutTicket" }],
+    },
+    {
+      code: "// TODO(.scratch/editor/issues/03) then TODO remove the hack\nconst a = 1;",
+      errors: [{ messageId: "todoWithoutTicket" }],
+    },
+    {
+      code: "/** TODO: document this API */\nexport const a = 1;",
       errors: [{ messageId: "todoWithoutTicket" }],
     },
     {
