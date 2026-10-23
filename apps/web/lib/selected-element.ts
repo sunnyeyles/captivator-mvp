@@ -1,5 +1,6 @@
 import {
   CONNECT_BUTTON_ID,
+  guestFieldDefaults,
   LOGO_ELEMENT_ID,
   type ConnectButton,
   type GuestField,
@@ -15,6 +16,27 @@ export type SelectedElement = { id: string } & (
   | { kind: "button"; element: ConnectButton }
   | { kind: "logo"; element: Logo }
 );
+
+export function textName(text: TextElement) {
+  return text.text.trim() || "Empty text";
+}
+
+export function fieldName(field: GuestField) {
+  return field.label || guestFieldDefaults[field.type].label;
+}
+
+export function elementName(selected: SelectedElement) {
+  switch (selected.kind) {
+    case "text":
+      return textName(selected.element);
+    case "field":
+      return fieldName(selected.element);
+    case "button":
+      return "Connect button";
+    case "logo":
+      return "Logo";
+  }
+}
 
 export function findSelectedElement(
   config: PortalConfig,

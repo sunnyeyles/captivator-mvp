@@ -1,9 +1,9 @@
 "use client";
 
 import { devices, type Device } from "@repo/portal";
-import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
+import { deviceDetails } from "./devices";
 
 function isDevice(value: string): value is Device {
   return devices.some((device) => device === value);
@@ -30,18 +30,15 @@ export function DeviceToggle({
       // Radix emits an empty string when the active item is clicked again, which would leave no mode selected
       onValueChange={(next) => isDevice(next) && onValueChange(next)}
     >
-      <ToggleGroupItem value="desktop" aria-label="Desktop">
-        <Monitor />
-        Desktop
-      </ToggleGroupItem>
-      <ToggleGroupItem value="tablet" aria-label="Tablet">
-        <Tablet />
-        Tablet
-      </ToggleGroupItem>
-      <ToggleGroupItem value="mobile" aria-label="Mobile">
-        <Smartphone />
-        Mobile
-      </ToggleGroupItem>
+      {devices.map((device) => {
+        const { label, icon: Icon } = deviceDetails[device];
+        return (
+          <ToggleGroupItem key={device} value={device} aria-label={label}>
+            <Icon />
+            {label}
+          </ToggleGroupItem>
+        );
+      })}
     </ToggleGroup>
   );
 }

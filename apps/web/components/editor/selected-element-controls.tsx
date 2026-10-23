@@ -1,11 +1,11 @@
 "use client";
 
-import { guestFieldDefaults } from "@repo/portal";
 import { ArrowLeft } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@repo/ui/button";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import {
+  elementName,
   findSelectedElement,
   type SelectedElement,
 } from "@/lib/selected-element";
@@ -29,22 +29,6 @@ function ElementControls({ selected }: { selected: SelectedElement }) {
           <LogoLayoutControls logo={selected.element} />
         </div>
       );
-  }
-}
-
-function elementName(selected: SelectedElement) {
-  switch (selected.kind) {
-    case "text":
-      return selected.element.text.trim() || "Empty text";
-    case "field":
-      return (
-        selected.element.label ||
-        guestFieldDefaults[selected.element.type].label
-      );
-    case "button":
-      return "Connect button";
-    case "logo":
-      return "Logo";
   }
 }
 

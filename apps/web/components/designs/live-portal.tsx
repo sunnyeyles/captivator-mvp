@@ -1,10 +1,11 @@
 "use client";
 
 import { SplashPage, type Device } from "@repo/portal";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Button } from "@repo/ui/button";
+import {
+  FullPageLoading,
+  FullPageMessage,
+} from "@/components/full-page-status";
 import { designRepository, type LiveDesign } from "@/lib/designs";
 
 function viewportDevice(): Device {
@@ -38,30 +39,15 @@ export function LivePortal() {
   }, []);
 
   if (live === undefined) {
-    return (
-      <p
-        role="status"
-        className="grid h-dvh place-items-center text-sm text-muted-foreground"
-      >
-        Loading live page…
-      </p>
-    );
+    return <FullPageLoading label="Loading live page…" />;
   }
 
   if (live === null) {
     return (
-      <main className="grid h-dvh place-content-center justify-items-center gap-4 text-center">
-        <h1 className="text-lg font-semibold">Nothing is live</h1>
-        <p className="text-sm text-muted-foreground">
-          Publish a design to make it the page guests see.
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/">
-            <ArrowLeft aria-hidden />
-            Back to designs
-          </Link>
-        </Button>
-      </main>
+      <FullPageMessage
+        title="Nothing is live"
+        description="Publish a design to make it the page guests see."
+      />
     );
   }
 

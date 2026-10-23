@@ -1,36 +1,23 @@
 "use client";
 
 import {
+  backgroundFits,
   defaultOverlay,
   type BackgroundImage,
-  type Device,
   type PortalConfig,
 } from "@repo/portal";
-import {
-  LoaderCircle,
-  Monitor,
-  Move,
-  RotateCcw,
-  Smartphone,
-  Tablet,
-} from "lucide-react";
+import { LoaderCircle, Move, RotateCcw } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { Button } from "@repo/ui/button";
 import { Label } from "@repo/ui/label";
-import { Slider } from "@repo/ui/slider";
 import { Switch } from "@repo/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { prepareBackgroundImage } from "@/lib/background-analysis";
 import { usePortalEditorStore } from "@/lib/editor-store";
-import { BackgroundColorControl } from "./background-color-control";
 import { ColorField } from "./color-field";
+import { deviceDetails } from "./devices";
 import { ImageUploadField } from "./image-upload-field";
-
-const deviceDetails: Record<Device, { name: string; icon: typeof Monitor }> = {
-  desktop: { name: "desktop", icon: Monitor },
-  tablet: { name: "tablet", icon: Tablet },
-  mobile: { name: "mobile", icon: Smartphone },
-};
+import { OptionToggle } from "./option-toggle";
+import { SliderField } from "./slider-field";
 
 const typeOptions: {
   value: PortalConfig["background"]["type"];
@@ -40,53 +27,15 @@ const typeOptions: {
   { value: "image", label: "Image" },
 ];
 
-const fitOptions: { value: BackgroundImage["fit"]; label: string }[] = [
-  { value: "cover", label: "Fill" },
-  { value: "contain", label: "Fit" },
-];
+const fitLabels: Record<BackgroundImage["fit"], string> = {
+  cover: "Fill",
+  contain: "Fit",
+};
 
-function OptionToggle<Value extends string>({
-  label,
+const fitOptions = backgroundFits.map((value) => ({
   value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: Value;
-  options: { value: Value; label: string }[];
-  onChange: (value: Value) => void;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label asChild>
-        <span>{label}</span>
-      </Label>
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        aria-label={label}
-        className="w-full"
-        value={value}
-        onValueChange={(next) => {
-          // Radix emits an empty string when the active item is clicked again
-          const option = options.find((candidate) => candidate.value === next);
-          if (option) onChange(option.value);
-        }}
-      >
-        {options.map((option) => (
-          <ToggleGroupItem
-            key={option.value}
-            value={option.value}
-            className="flex-1 px-1 text-xs"
-          >
-            {option.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </div>
-  );
-}
+  label: fitLabels[value],
+}));
 
 function OverlayControls({
   overlay,
@@ -96,7 +45,6 @@ function OverlayControls({
   onChange: (overlay: BackgroundImage["overlay"]) => void;
 }) {
   const switchId = useId();
-  const opacityId = useId();
 
   return (
     <div className="grid gap-3">
@@ -117,24 +65,17 @@ function OverlayControls({
             color={overlay.color}
             onChange={(color) => onChange({ ...overlay, color })}
           />
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <Label id={opacityId}>Overlay opacity</Label>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {Math.round(overlay.opacity * 100)}%
-              </span>
-            </div>
-            <Slider
-              aria-labelledby={opacityId}
-              min={0}
-              max={100}
-              step={5}
-              value={[Math.round(overlay.opacity * 100)]}
-              onValueChange={([percent = 0]) =>
-                onChange({ ...overlay, opacity: percent / 100 })
-              }
-            />
-          </div>
+          <SliderField
+            label="Overlay opacity"
+            unit="%"
+            value={Math.round(overlay.opacity * 100)}
+            min={0}
+            max={100}
+            step={5}
+            onValueChange={(percent) =>
+              onChange({ ...overlay, opacity: percent / 100 })
+            }
+          />
         </>
       ) : null}
     </div>
@@ -151,7 +92,8 @@ function PositionControls({ image }: { image: BackgroundImage }) {
   const clearOverride = usePortalEditorStore(
     (state) => state.clearBackgroundPositionOverride,
   );
-  const { name, icon: Icon } = deviceDetails[deviceMode];
+  const { label, icon: Icon } = deviceDetails[deviceMode];
+  const name = label.toLowerCase();
   const overridden = image.overrides?.[deviceMode]?.position !== undefined;
 
   return (
@@ -250,7 +192,11 @@ export function BackgroundControls() {
         options={typeOptions}
         onChange={(type) => updateBackground({ type })}
       />
-      <BackgroundColorControl />
+      <ColorField
+        label="Background colour"
+        color={background.color}
+        onChange={(color) => updateBackground({ color })}
+      />
       {background.type === "image" ? (
         <>
           <ImageUploadField

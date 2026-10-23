@@ -1,11 +1,34 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Separator } from "@repo/ui/separator";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { findSelectedElement } from "@/lib/selected-element";
 import { BackgroundControls } from "./background-controls";
 import { ChangeDesignDialog } from "./change-design-dialog";
 import { ElementList } from "./element-list";
+
+function PanelSection({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section aria-labelledby={id} className="grid gap-3 p-4">
+      <h3
+        id={id}
+        className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+      >
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
 
 export function PagePanel() {
   // The selected element's own panel takes the sidebar's place
@@ -23,25 +46,13 @@ export function PagePanel() {
         <ChangeDesignDialog />
       </div>
       <Separator />
-      <section aria-labelledby="elements-group" className="grid gap-3 p-4">
-        <h3
-          id="elements-group"
-          className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-        >
-          Elements
-        </h3>
+      <PanelSection id="elements-group" title="Elements">
         <ElementList />
-      </section>
+      </PanelSection>
       <Separator />
-      <section aria-labelledby="background-group" className="grid gap-3 p-4">
-        <h3
-          id="background-group"
-          className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-        >
-          Background
-        </h3>
+      <PanelSection id="background-group" title="Background">
         <BackgroundControls />
-      </section>
+      </PanelSection>
     </>
   );
 }

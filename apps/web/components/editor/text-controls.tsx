@@ -3,39 +3,47 @@
 import {
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
-  layoutDefaults,
+  fontWeights,
   resolveForDevice,
-  SPACE_ABOVE_MAX,
-  SPACE_ABOVE_MIN,
+  textAligns,
   type TextElement,
 } from "@repo/portal";
-import { AlignCenter, AlignLeft, AlignRight, Trash2 } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
 import { useId } from "react";
-import { Button } from "@repo/ui/button";
 import { Label } from "@repo/ui/label";
 import { Textarea } from "@repo/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@repo/ui/toggle-group";
 import { usePortalEditorStore } from "@/lib/editor-store";
 import { ColorField } from "./color-field";
 import { LayoutSection } from "./layout-section";
-import { SliderField } from "./slider-field";
+import { OptionToggle, type ToggleOption } from "./option-toggle";
+import { RemoveButton } from "./remove-button";
+import { SliderField, SpaceAboveSlider } from "./slider-field";
 
-const weightOptions: { value: TextElement["fontWeight"]; label: string }[] = [
-  { value: 400, label: "Regular" },
-  { value: 500, label: "Medium" },
-  { value: 600, label: "Semibold" },
-  { value: 700, label: "Bold" },
-];
+const weightLabels: Record<TextElement["fontWeight"], string> = {
+  400: "Regular",
+  500: "Medium",
+  600: "Semibold",
+  700: "Bold",
+};
 
-const alignOptions = [
-  { value: "left", label: "Align left", icon: AlignLeft },
-  { value: "center", label: "Align centre", icon: AlignCenter },
-  { value: "right", label: "Align right", icon: AlignRight },
-] as const satisfies {
-  value: TextElement["textAlign"];
-  label: string;
-  icon: unknown;
-}[];
+const weightOptions = fontWeights.map((value) => ({
+  value,
+  label: weightLabels[value],
+}));
+
+const alignDetails: Record<
+  TextElement["textAlign"],
+  Omit<ToggleOption<TextElement["textAlign"]>, "value">
+> = {
+  left: { label: "Align left", icon: AlignLeft },
+  center: { label: "Align centre", icon: AlignCenter },
+  right: { label: "Align right", icon: AlignRight },
+};
+
+const alignOptions = textAligns.map((value) => ({
+  value,
+  ...alignDetails[value],
+}));
 
 export function TextControls({ text }: { text: TextElement }) {
   const deviceMode = usePortalEditorStore((state) => state.deviceMode);
@@ -70,78 +78,25 @@ export function TextControls({ text }: { text: TextElement }) {
         max={FONT_SIZE_MAX}
         onValueChange={(fontSize) => updateText(text.id, { fontSize })}
       />
-      <div className="grid gap-2">
-        <Label asChild>
-          <span>Font weight</span>
-        </Label>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          aria-label="Font weight"
-          className="w-full"
-          value={String(text.fontWeight)}
-          onValueChange={(value) => {
-            const option = weightOptions.find(
-              (candidate) => String(candidate.value) === value,
-            );
-            if (option) updateText(text.id, { fontWeight: option.value });
-          }}
-        >
-          {weightOptions.map((option) => (
-            <ToggleGroupItem
-              key={option.value}
-              value={String(option.value)}
-              className="flex-1 px-1 text-xs"
-            >
-              {option.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-      <div className="grid gap-2">
-        <Label asChild>
-          <span>Alignment</span>
-        </Label>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          aria-label="Alignment"
-          value={resolved.textAlign}
-          onValueChange={(value) => {
-            const option = alignOptions.find(
-              (candidate) => candidate.value === value,
-            );
-            if (option) updateText(text.id, { textAlign: option.value });
-          }}
-        >
-          {alignOptions.map(({ value, label, icon: Icon }) => (
-            <ToggleGroupItem key={value} value={value} aria-label={label}>
-              <Icon />
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
+      <OptionToggle
+        label="Font weight"
+        value={text.fontWeight}
+        options={weightOptions}
+        onChange={(fontWeight) => updateText(text.id, { fontWeight })}
+      />
+      <OptionToggle
+        label="Alignment"
+        value={resolved.textAlign}
+        options={alignOptions}
+        onChange={(textAlign) => updateText(text.id, { textAlign })}
+      />
       <LayoutSection>
-        <SliderField
-          label="Space above"
-          unit="px"
-          value={resolved.spaceAbove ?? layoutDefaults.spaceAbove}
-          min={SPACE_ABOVE_MIN}
-          max={SPACE_ABOVE_MAX}
+        <SpaceAboveSlider
+          value={resolved.spaceAbove}
           onValueChange={(spaceAbove) => updateText(text.id, { spaceAbove })}
         />
       </LayoutSection>
-      <Button
-        variant="outline"
-        size="sm"
-        className="justify-self-start text-destructive"
-        onClick={() => removeText(text.id)}
-      >
-        <Trash2 />
-        Remove text
-      </Button>
+      <RemoveButton label="Remove text" onClick={() => removeText(text.id)} />
     </div>
   );
 }

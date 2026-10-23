@@ -1,9 +1,9 @@
 "use client";
 
 import { colorSchema } from "@repo/portal";
-import { useId, useState } from "react";
 import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
+import { FieldError, useValidatedDraft } from "./validated-draft";
 
 // The native colour picker only accepts the six-digit form
 function toSixDigitHex(color: string) {
@@ -18,23 +18,16 @@ interface ColorFieldProps {
 }
 
 export function ColorField({ label, color, onChange }: ColorFieldProps) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const inputId = useId();
-  const errorId = useId();
-
-  const text = draft ?? color;
-  const error =
-    draft === null ? undefined : colorSchema.safeParse(draft).error?.issues[0];
-
-  function handleTextChange(value: string) {
-    setDraft(value);
-    if (colorSchema.safeParse(value).success) onChange(value);
-  }
+  const { error, errorId, resetDraft, inputProps } = useValidatedDraft(
+    colorSchema,
+    color,
+    onChange,
+  );
 
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-3">
-        <Label htmlFor={inputId}>{label}</Label>
+        <Label htmlFor={inputProps.id}>{label}</Label>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -42,29 +35,19 @@ export function ColorField({ label, color, onChange }: ColorFieldProps) {
             className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-1"
             value={toSixDigitHex(color)}
             onChange={(event) => {
-              setDraft(null);
+              resetDraft();
               onChange(event.target.value);
             }}
           />
           <Input
-            id={inputId}
+            {...inputProps}
             className="h-8 w-24 font-mono text-xs"
-            value={text}
             spellCheck={false}
             autoComplete="off"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-            onChange={(event) => handleTextChange(event.target.value)}
-            // Drop an unfinished value so the field shows the colour the canvas is actually using
-            onBlur={() => setDraft(null)}
           />
         </div>
       </div>
-      {error ? (
-        <p id={errorId} className="text-sm text-destructive">
-          {error.message}
-        </p>
-      ) : null}
+      <FieldError id={errorId} message={error?.message} />
     </div>
   );
 }
