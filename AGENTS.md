@@ -11,7 +11,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ## Project
 
-A visual Wi-Fi splash page (captive portal) builder. `docs/MVP_SPEC.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, Zustand and Lucide in `apps/web`, shadcn/ui in `packages/ui`, Zod in `packages/portal`, plus Vitest for tests.
+A visual Wi-Fi splash page (captive portal) builder. `.scratch/editor/spec.md` is the product and technical spec, so read it before building features. The spec's stack is installed: Tailwind, Zustand and Lucide in `apps/web`, shadcn/ui in `packages/ui`, Zod in `packages/portal`, plus Vitest for tests.
 
 ## Commands
 
@@ -27,7 +27,7 @@ Lint runs with `--max-warnings 0`, so any warning fails the build. It enforces t
 
 Before calling a change done, run `lint`, `check-types` and `test` for every workspace it touches and fix what it broke. Report each check as run and passed, run and failed (with output), or not run.
 
-## Architecture (from docs/MVP_SPEC.md)
+## Architecture (from .scratch/editor/spec.md)
 
 - `apps/web`: editor shell (toolbar, properties sidebar, design canvas), the Zustand store, and for now the editor theme tokens (`app/globals.css`)
 - `packages/portal`: portal config schema (Zod), defaults, templates and the `SplashPage` renderer

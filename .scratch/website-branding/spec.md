@@ -1,6 +1,6 @@
 # Website branding import
 
-Status: ready-for-agent
+**Status:** done
 
 ## Problem Statement
 
@@ -310,7 +310,7 @@ The sidebar section and chooser get no unit tests, in line with the existing edi
 
 ## Further Notes
 
-- `docs/MVP_SPEC.md` §15 lists "Website Branding Import" as an optional enhancement. This spec implements it without the §16 infrastructure.
+- `.scratch/editor/spec.md` §15 lists "Website Branding Import" as an optional enhancement. This spec implements it without the §16 infrastructure.
 - Many small-business sites declare no `theme-color` or manifest, so expect `colors` to be empty fairly often. The designs then keep template colours with the customer's name, logo and image, and the colour row invites a custom colour. That gap is why pixel-sampled colours are the first follow-up.
 - `og:image` is often a social card with text baked in. That's acceptable for the MVP because the Event overlay keeps text readable and the customer can replace the image.
 - The repo has no `GLOSSARY.md` yet. Two new terms are introduced: **brand profile** (what an import extracts) and **branded design** (a template config with a brand profile applied). They are worth adding through `/domain-modeling` when the glossary is created.
