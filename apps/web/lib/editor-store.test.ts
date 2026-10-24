@@ -1430,3 +1430,52 @@ describe("branded designs", () => {
     expect(getState().brand).toBe(brand);
   });
 });
+
+describe("agent generation", () => {
+  const generated = {
+    ...defaultPortalConfig,
+    background: { ...defaultPortalConfig.background, color: "#0f172a" },
+  };
+
+  it("previews streamed configs without adding undo steps", () => {
+    getState().previewGeneratedConfig(generated);
+    getState().previewGeneratedConfig(generated);
+
+    expect(getState().config).toBe(generated);
+    expect(getState().past).toEqual([]);
+  });
+
+  it("lands a finished reply as one undo step", () => {
+    const before = getState().config;
+    getState().previewGeneratedConfig(defaultPortalConfig);
+    getState().finishGeneration(generated);
+
+    expect(getState().config).toBe(generated);
+    expect(getState().generationBase).toBeNull();
+    getState().undo();
+    expect(getState().config).toBe(before);
+  });
+
+  it("restores the design when a reply fails", () => {
+    const before = getState().config;
+    getState().previewGeneratedConfig(generated);
+    getState().finishGeneration(null);
+
+    expect(getState().config).toBe(before);
+    expect(getState().past).toEqual([]);
+  });
+
+  it("adds no undo step when the reply changes nothing", () => {
+    getState().finishGeneration(structuredClone(getState().config));
+
+    expect(getState().past).toEqual([]);
+  });
+
+  it("ignores undo while a reply streams", () => {
+    getState().updateBackground({ color: "#0ea5e9" });
+    getState().previewGeneratedConfig(generated);
+    getState().undo();
+
+    expect(getState().config).toBe(generated);
+  });
+});
