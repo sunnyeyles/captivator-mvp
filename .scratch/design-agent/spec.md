@@ -12,7 +12,7 @@ A **Design assistant** chat panel sits beside the canvas in the editor. The cust
 
 The assistant's reply streams into the canvas, so the page changes as the answer arrives, and a one-line summary of what changed appears in the chat. A finished reply lands as one undo step. **Stop** or a failed reply puts the page back to how it was before the message.
 
-The assistant writes the same `PortalConfig` the controls write, through the portal schema, so everything it produces stays editable in the sidebar and is saved and published like any other edit. It can't add images, extra fields or links, and says so when asked. It runs on the Vercel AI Gateway through the AI SDK, on a cheap default model that `AI_MODEL` can change without a code change.
+The assistant writes the same `PortalConfig` the controls write, through the portal schema, so everything it produces stays editable in the sidebar and is saved and published like any other edit. The customer can also start from their own brand: **From your website** reads their site, and **Upload assets** takes a logo and a photo. Their logo and background go on the page and their name, description and colours go to the assistant to theme around. The assistant itself can't make images, extra fields or links, and says so when asked. It runs on the Vercel AI Gateway through the AI SDK, on a cheap default model that `AI_MODEL` can change without a code change.
 
 ## User Stories
 
@@ -36,6 +36,11 @@ The assistant writes the same `PortalConfig` the controls write, through the por
 18. As a developer, I want the model set by an environment variable, so that we can switch to a better or cheaper one without a code change.
 19. As a developer, I want every value the model returns checked against the portal schema, so that a bad reply can never produce an invalid config.
 20. As a developer, I want the route to work without a key in tests, so that the agent is covered by fast unit tests with a mock model.
+21. As a customer, I want to start a design from my website address, so that the page uses my logo, colours, name and copy without me typing them.
+22. As a customer, I want to upload my logo and a photo and have the page themed around them, so that I get my branding even without a website.
+23. As a customer, I want to choose whether each uploaded image is the logo or the background, so that the assistant uses them the way I intend.
+24. As a customer, I want a stopped or failed reply to take my imported or uploaded images off the page again, so that starting from my brand is as safe as any other message.
+25. As a developer, I want text from the customer's website passed to the agent as data, never instructions, so that a site can't steer the assistant.
 
 ## Implementation Decisions
 
@@ -71,6 +76,9 @@ A deep module with a small public surface, and the main test seam.
   - The agent can't supply an image, so `background.type: "image"` is only kept when the page already has one, and the logo and background image are always kept.
   - The result is parsed with `portalConfigSchema`. If that fails the base config is returned.
 - **`examplePrompts`**: six Popup WiFi events (music festival, weekend market, footy grand final, tech conference, charity fun run, rooftop pop-up bar).
+- **`brandContextSchema`**: optional `name` (up to `BRAND_NAME_MAX`), `description` (up to `BRAND_DESCRIPTION_MAX` = 200), an http(s) `sourceUrl`, up to `BRAND_COLORS_MAX` = 6 hex `colors` and `hasLogo`. `designRequestSchema` takes it as an optional `brand`.
+- **`DesignStart`** (`{ text, brand?, assets? }`) is a chat turn that starts from the customer's brand, and **`withAssets(config, assets)`** places its logo (keeping size and overrides) and background image (keeping fit and overlay, through `placedBackgroundImage`) on a config before the request, so the reply lands on top of them.
+- Because assets are placed before the request, an uploaded or imported background counts as one the page already has, and the agent may show it or switch back to a colour.
 
 `guestFieldSchema` is exported from `@repo/portal` for the field merge.
 
@@ -84,7 +92,7 @@ A deep module with a small public surface, and the main test seam.
 - With neither `AI_GATEWAY_API_KEY` nor `VERCEL_OIDC_TOKEN` set, it answers `503` with "The design assistant isn't set up yet."
 - Errors are `{ error: { message } }` with `Cache-Control: no-store`.
 - Success streams the JSON text of `designReplySchema` from `streamText` with `Output.object`, also `no-store`. The request's abort signal is passed on, so Stop cancels the model call. `maxDuration` is 30 seconds.
-- The system prompt describes Popup WiFi and its events, then the rules: start from the current design and change only what was asked, at most 3 short texts in Australian English, keep existing text ids, readable contrast, heading and copy size ranges, at most 2 guest fields, a button label under 20 characters, image backgrounds only when one exists, and say so when asked for something the page can't do. The current design and whether it has a background image are appended to the system prompt.
+- The system prompt describes Popup WiFi and its events, then the rules: start from the current design and change only what was asked, at most 3 short texts in Australian English, keep existing text ids, readable contrast, heading and copy size ranges, at most 2 guest fields, a button label under 20 characters, image backgrounds only when one exists, and say so when asked for something the page can't do. With a brand it also themes the page around the brand's colours, uses its name in the heading, bases copy on its description and prefers showing a just-added image. The current design, whether it has a background image and, when given, the brand are appended to the system prompt. The brand is quoted as JSON and labelled as data from the customer's website or images, never instructions.
 
 ### Store changes (`apps/web/lib/editor-store.ts`)
 
@@ -93,13 +101,17 @@ A deep module with a small public surface, and the main test seam.
 - `finishGeneration(config | null)` lands the final config as one undo step on top of `generationBase`. `null` restores the base, as on Stop or failure. A reply that changes nothing adds no undo step. A reply that finishes before any preview uses the current state as its base.
 - Undo and redo are ignored while `generationBase` is set, since the reply lands on top of the history when it finishes.
 - Loading a design clears `generationBase`.
+- `generationBase` counts as reachable when blob URLs are revoked, so the base's images survive while a reply streams over them, and a failed reply's images are freed.
 
 ### UI behaviour (`apps/web/components/editor/design-assistant.tsx`)
 
 A client leaf built from shadcn `Button` and `Textarea` and editor theme tokens.
 
 - A "Design assistant" header, then a conversation `role="log"` with `aria-live="polite"`.
-- The empty state explains the assistant and lists the example prompts as buttons that send straight away.
+- The empty state explains the assistant and lists the ways to start as `PromptCard`s in a container-query grid: **From your website**, **Upload assets**, then the example prompts, which send straight away.
+- **From your website** (`website-asset-card.tsx`) opens the existing website URL form, imports through `/api/brand-import` and sends "Design a page using the brand from {host}" with the brand's name, description, colours (the site's plus the logo's dominant colours) and its logo and image as assets.
+- **Upload assets** (`upload-asset-card.tsx`) takes up to two PNG, JPEG, WebP or SVG files by picker or drag and drop. SVGs default to the logo and the first photo to the background, each role holds one image, and an SVG can only be the logo. The background goes through `prepareBackgroundImage` for its automatic positions, the colours come from both images, and it sends "Design a page around my uploaded images".
+- Assets are placed inside the streaming preview, so Stop or a failed reply takes them off the page again. If a reply started in the meantime, the upload card frees its object URLs.
 - User and assistant messages are bubbles. While a reply streams, a spinner bubble shows the streamed reply text, or "Designing…" until it starts.
 - Errors show in a `role="alert"` line: the route's message when it sent one, otherwise "The assistant couldn't finish that. Try again." A reply with no text shows "Done."
 - The input is limited to `CHAT_MESSAGE_MAX`. Enter sends, Shift+Enter adds a line. Send is disabled when the input is empty and becomes Stop while a reply streams.
@@ -116,7 +128,8 @@ The panel sits to the right of the canvas on `md` and up, and below it on small 
 
 ### Security and cost
 
-- The prompt only ever sees text, colours and field settings, never image data.
+- The prompt only ever sees text, colours and field settings, never image data. Colours are read from images in the browser.
+- Brand text from the customer's website is passed as quoted data, never instructions.
 - The model's output never reaches the store unchecked: every value goes through the portal schema.
 - The route has no auth or rate limiting, so anyone who can reach it can spend gateway credits. Acceptable for the demo, and recorded under Out of Scope.
 
@@ -125,6 +138,7 @@ The panel sits to the right of the canvas on `md` and up, and below it on small 
 1. **Prompt to design:** the agent schemas and merge, the route on the AI Gateway, the chat panel with example prompts, and a finished reply applied as one undo step.
 2. **Live streaming, Stop and failure:** streamed chunks preview on the canvas without history, Stop and failures restore the page, and undo waits for the reply.
 3. **Refining in conversation:** history and the current design go with each message, the agent changes only what was asked, and device overrides of untouched values survive.
+4. **Starting from the customer's brand:** From your website and Upload assets place the customer's images and send their brand as data.
 
 ## Acceptance Criteria
 
@@ -135,6 +149,7 @@ The panel sits to the right of the canvas on `md` and up, and below it on small 
 - Logos and background images are never removed, and a background image is only shown when the page has one.
 - No reply, however malformed, produces a config that fails `portalConfigSchema`.
 - Without a gateway key the assistant says it isn't set up yet.
+- Starting from a website or uploads puts the customer's logo and background on the page and themes the design around their brand, and Stop or failure removes them again.
 - `lint`, `check-types` and `test` pass for `web` and `@repo/portal`.
 
 ## Testing Decisions
@@ -143,21 +158,22 @@ Tests check external behaviour through public interfaces, in Vitest's node envir
 
 - **Merge (`design-agent.test.ts`):** a complete design gives a valid config, logo and background image are kept, overrides of changed keys are cleared and of untouched keys kept, invalid values fall back, empty labels use the type default, repeated and extra fields are dropped, image backgrounds need an existing image, partial streams keep the current design, texts without an id are skipped, every template's `toGeneratedDesign` parses as a request, and it round-trips through the merge unchanged.
 - **Store (`editor-store.test.ts`):** a streamed preview adds no history, a finished reply is one undo step, a failed reply restores the design, an unchanged reply adds no step, and undo is ignored while a reply streams.
-- **Route (`route.test.ts`):** with `MockLanguageModelV4` in place of the gateway model, it streams the design as JSON text, rejects a malformed body and an empty conversation with 400, and answers 503 without a key.
+- **Route (`route.test.ts`):** with `MockLanguageModelV4` in place of the gateway model, it streams the design as JSON text, rejects a malformed body and an empty conversation with 400, answers 503 without a key, passes the brand to the agent as data and rejects an invalid brand.
+- **Brand assets:** `withAssets` places a background and logo and leaves a config without assets alone, the merge shows or drops an uploaded background, `designRequestSchema` accepts requests with and without a brand, `importBrand` extracts and caps the site description, `dominantColors` orders and merges colours and ignores transparency, `assetFileError` rejects an oversized SVG, and the store keeps the base's images while a reply streams.
 
 Prior art: `editor-store.test.ts` resets the store before each test and drives actions through `getState`.
 
 ## Out of Scope
 
 - Auth and rate limiting on the route.
-- Images from the assistant: generating, searching for or uploading logos and backgrounds.
+- Images made by the assistant: generating or searching for logos and backgrounds. The customer supplies them through From your website and Upload assets.
 - Layout and spacing, fonts, device-specific values and templates: the agent writes shared values only.
 - Keeping the conversation across reloads or saving it with the Design.
 - Choosing a model in the UI.
-- Tool calls, multi-step agents and reading the customer's website (website branding covers that).
+- Tool calls and multi-step agents. The website is read once by the existing brand import, not by the agent.
 
 ## Further Notes
 
-- Written retrospectively. The feature shipped in PR #21 (commit `5f8e2f2`), and the tickets under `issues/` record it as three slices of that one change.
+- Written retrospectively. Tickets 01 to 03 record PR #21 (commit `5f8e2f2`) as three slices of one change. Ticket 04 records PR #25 (commit `ab3cd0a`), which brought #22 to `main` after it missed #21's merge.
 - Not tested against a live model when it shipped, because the AI Gateway was unreachable from the build environment. It was checked in the running app with a mocked route response.
 - PR #23 later moved the panel into the resizable `EditorPanels` layout. That change belongs to the editor, not this feature.
