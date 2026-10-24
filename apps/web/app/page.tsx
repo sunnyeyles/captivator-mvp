@@ -1,6 +1,5 @@
 import { Wifi } from "lucide-react";
 import { DesignsLibrary } from "@/components/designs/designs-library";
-import { NewDesignDialog } from "@/components/designs/new-design-dialog";
 
 export default function DesignsPage() {
   return (
@@ -12,10 +11,6 @@ export default function DesignsPage() {
         </div>
       </header>
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-semibold">Designs</h1>
-          <NewDesignDialog />
-        </div>
         <DesignsLibrary />
       </main>
     </div>
