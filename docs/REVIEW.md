@@ -12,6 +12,12 @@ I'd also let people use it for free and send them a finished design even if they
 
 The customer types their website address and gets three finished designs (Minimal, Event and Corporate) using their own name, logo, colours and an image from their site. They pick one and they're done. Anything the site doesn't have falls back to the template, so a design never looks broken.
 
+## Designing by chat
+
+The editor has a design assistant beside the canvas. The customer describes their event ("navy and gold for the footy grand final, ask for name and phone"), or picks an example prompt, and the page changes as the answer streams in. Follow-up messages change only what was asked. They can also start from their own brand: From your website reads their site, and Upload assets takes a logo and a photo.
+
+It writes the same settings the controls do, checked against the same schema, so everything it makes stays editable by hand. A reply is one undo step, and stopping or a failed reply puts the page back as it was.
+
 ## Sign-in with a magic link
 
 No passwords. When a rental is booked, we email the customer a link to their designs. Clicking it signs them in. Links expire and work once, and they can ask for a new one any time.
@@ -25,9 +31,10 @@ flowchart LR
   app <--> email[Resend: emails]
   app <--> s3[S3: images]
   app <--> crawl[Firecrawl: website branding]
+  app <--> ai[Vercel AI Gateway: design assistant]
 ```
 
-One Next.js app hosts the editor, the API and the published pages. The MVP runs without any of the services on the right: designs are saved in the browser, and branding is read by a small built-in fetcher.
+One Next.js app hosts the editor, the API and the published pages. The MVP runs without any of the services on the right: designs are saved in the browser, and branding is read by a small built-in fetcher. The design assistant is the exception: it needs an AI Gateway key, though the rest of the editor works without one.
 
 ## Database
 
