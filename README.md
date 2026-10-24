@@ -22,6 +22,8 @@ pnpm dev
 
 The editor runs on http://localhost:3000.
 
+The design assistant (the editor's AI chat panel) runs on the Vercel AI Gateway. To use it locally, put `AI_GATEWAY_API_KEY` in `apps/web/.env.local`, or run `vercel env pull` for a `VERCEL_OIDC_TOKEN`. `AI_MODEL` optionally swaps the gateway model. Without a key the rest of the editor works, and the assistant says it isn't set up yet. Its spec is in [`.scratch/design-agent/spec.md`](.scratch/design-agent/spec.md).
+
 ## Commands
 
 Run from the repo root:
