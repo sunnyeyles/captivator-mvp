@@ -40,7 +40,7 @@ describe("POST /api/brand-import", () => {
   it("returns the brand profile for a reachable site", async () => {
     fakeFetch.mockResolvedValue(
       new Response(
-        '<meta property="og:site_name" content="Acme Coffee"><title>Home</title>',
+        '<meta property="og:site_name" content="Acme Coffee"><meta name="description" content="Small-batch roasts"><title>Home</title>',
         { headers: { "content-type": "text/html" } },
       ),
     );
@@ -53,6 +53,7 @@ describe("POST /api/brand-import", () => {
     expect(brandProfileSchema.parse(body.brand)).toMatchObject({
       sourceUrl: "https://acme.example/",
       name: "Acme Coffee",
+      description: "Small-batch roasts",
       missing: ["logo", "image", "colors"],
     });
     expect(fakeFetch).toHaveBeenCalledTimes(1);

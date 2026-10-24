@@ -13,10 +13,15 @@ import {
   examplePrompts,
   mergeGeneratedDesign,
   toGeneratedDesign,
+  withAssets,
   type ChatMessage,
   type DesignRequest,
+  type DesignStart,
 } from "@/lib/design-agent";
 import { usePortalEditorStore } from "@/lib/editor-store";
+import { PromptCard } from "./prompt-card";
+import { UploadAssetCard } from "./upload-asset-card";
+import { WebsiteAssetCard } from "./website-asset-card";
 
 const FALLBACK_ERROR = "The assistant couldn't finish that. Try again.";
 
@@ -80,24 +85,30 @@ export function DesignAssistant() {
   }, [object?.design, previewGeneratedConfig]);
 
   useEffect(() => {
+    // An empty chat stays scrolled to the top, where the ways to start are
+    if (messages.length === 0) return;
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages, object?.reply, failure]);
 
-  function send(text: string) {
+  function send({ text, brand, assets }: DesignStart) {
     const content = text.trim().slice(0, CHAT_MESSAGE_MAX);
-    if (!content || isLoading) return;
-    const { config } = usePortalEditorStore.getState();
+    if (!content || isLoading) return false;
+    const base = withAssets(usePortalEditorStore.getState().config, assets);
+    // Assets join the streaming preview, so a failed or stopped reply takes them off the page again
+    if (assets) previewGeneratedConfig(base);
     const next = [...messages, { role: "user" as const, content }];
-    baseRef.current = config;
+    baseRef.current = base;
     setMessages(next);
     setInput("");
     setFailure(null);
     const request: DesignRequest = {
       messages: next.slice(-CHAT_HISTORY_MAX),
-      design: toGeneratedDesign(config),
-      hasBackgroundImage: config.background.image !== null,
+      design: toGeneratedDesign(base),
+      hasBackgroundImage: base.background.image !== null,
+      brand,
     };
     submit(request);
+    return true;
   }
 
   // A stopped reply leaves nothing half-applied, so the page goes back to how it was
@@ -109,7 +120,7 @@ export function DesignAssistant() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    send(input);
+    send({ text: input });
   }
 
   return (
@@ -125,26 +136,25 @@ export function DesignAssistant() {
         className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4"
       >
         {messages.length === 0 && (
-          <div className="grid gap-3">
+          <div className="@container grid gap-3">
             <p className="text-sm text-muted-foreground">
               Describe your event and I&apos;ll design the page. Then ask for
               changes.
             </p>
-            <ul aria-label="Example prompts" className="grid gap-2">
+            <ul
+              aria-label="Ways to start"
+              className="grid gap-2 @sm:grid-cols-2"
+            >
+              <WebsiteAssetCard disabled={isLoading} onStart={send} />
+              <UploadAssetCard disabled={isLoading} onStart={send} />
               {examplePrompts.map(({ title, prompt }) => (
-                <li key={title}>
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => send(prompt)}
-                    className="w-full rounded-md border bg-card p-3 text-left text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                  >
-                    <span className="block text-sm font-medium">{title}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {prompt}
-                    </span>
-                  </button>
-                </li>
+                <PromptCard
+                  key={title}
+                  title={title}
+                  description={prompt}
+                  disabled={isLoading}
+                  onClick={() => send({ text: prompt })}
+                />
               ))}
             </ul>
           </div>
@@ -185,7 +195,7 @@ export function DesignAssistant() {
             // Enter sends and Shift+Enter starts a new line, as in most chat inputs
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
-              send(input);
+              send({ text: input });
             }
           }}
           className="max-h-40"

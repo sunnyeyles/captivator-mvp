@@ -9,6 +9,7 @@ import {
   designRequestSchema,
   mergeGeneratedDesign,
   toGeneratedDesign,
+  withAssets,
   type GeneratedDesign,
 } from "./design-agent";
 
@@ -148,5 +149,122 @@ describe("toGeneratedDesign", () => {
     expect(mergeGeneratedDesign(config, toGeneratedDesign(config))).toEqual(
       config,
     );
+  });
+});
+
+const upload = {
+  src: "blob:http://localhost/upload",
+  recommended: null,
+};
+
+describe("withAssets", () => {
+  it("places an uploaded background and shows it", () => {
+    const placed = withAssets(defaultPortalConfig, { background: upload });
+
+    expect(placed.background.type).toBe("image");
+    expect(placed.background.image?.src).toBe(upload.src);
+    expect(portalConfigSchema.safeParse(placed).success).toBe(true);
+  });
+
+  it("keeps the fit and overlay of the image it replaces", () => {
+    const placed = withAssets(base, { background: upload });
+
+    expect(placed.background.image).toMatchObject({
+      src: upload.src,
+      fit: base.background.image!.fit,
+      overlay: base.background.image!.overlay,
+    });
+  });
+
+  it("replaces the logo's source but keeps its size and overrides", () => {
+    const withLogo: PortalConfig = {
+      ...defaultPortalConfig,
+      branding: {
+        logo: {
+          src: "blob:http://localhost/old",
+          alt: "Acme logo",
+          maxHeight: 80,
+          overrides: { mobile: { maxHeight: 40 } },
+        },
+      },
+    };
+
+    const placed = withAssets(withLogo, { logo: "data:image/png;base64,AA" });
+
+    expect(placed.branding.logo).toEqual({
+      ...withLogo.branding.logo,
+      src: "data:image/png;base64,AA",
+    });
+  });
+
+  it("leaves a config without assets as it was", () => {
+    expect(withAssets(base)).toEqual(base);
+  });
+});
+
+describe("mergeGeneratedDesign with assets", () => {
+  it("lets the agent show an uploaded background", () => {
+    const placed = withAssets(defaultPortalConfig, { background: upload });
+
+    const merged = mergeGeneratedDesign(placed, {
+      background: { type: "image", color: "#111111" },
+    });
+
+    expect(merged.background.type).toBe("image");
+    expect(merged.background.image?.src).toBe(upload.src);
+  });
+
+  it("lets the agent switch an uploaded background back to a colour", () => {
+    const placed = withAssets(defaultPortalConfig, { background: upload });
+
+    const merged = mergeGeneratedDesign(placed, {
+      background: { type: "color" },
+    });
+
+    expect(merged.background.type).toBe("color");
+    expect(merged.background.image?.src).toBe(upload.src);
+  });
+});
+
+describe("designRequestSchema brand", () => {
+  const request = {
+    messages: [{ role: "user", content: "Design a page using my brand" }],
+    design: toGeneratedDesign(defaultPortalConfig),
+    hasBackgroundImage: false,
+  };
+  const brand = {
+    name: "Acme Coffee",
+    description: "Small-batch roasts",
+    sourceUrl: "https://acme.example/",
+    colors: ["#1d4ed8", "#ffffff"],
+    hasLogo: true,
+  };
+
+  it("accepts a request without a brand", () => {
+    expect(designRequestSchema.safeParse(request).success).toBe(true);
+  });
+
+  it("accepts a website brand and an upload's colours alone", () => {
+    for (const value of [brand, { colors: ["#000000"], hasLogo: false }]) {
+      expect(
+        designRequestSchema.safeParse({ ...request, brand: value }).success,
+      ).toBe(true);
+    }
+  });
+
+  it.each([
+    ["too many colours", { colors: Array(7).fill("#000000") }],
+    ["a colour that isn't hex", { colors: ["blue"] }],
+    ["an overlong description", { description: "a".repeat(201) }],
+    ["an overlong name", { name: "a".repeat(61) }],
+    ["a non-web source", { sourceUrl: "javascript:alert(1)" }],
+    ["a missing logo flag", { hasLogo: undefined }],
+  ])("rejects %s", (_label, change) => {
+    expect(
+      designRequestSchema.safeParse({
+        ...request,
+        brand: { ...brand, ...change },
+      }).success,
+    ).toBe(false);
   });
 });

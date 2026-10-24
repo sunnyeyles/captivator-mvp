@@ -1,6 +1,14 @@
-import { defaultPortalConfig, type PortalConfig } from "@repo/portal";
+import {
+  defaultPortalConfig,
+  IMAGE_MAX_BYTES,
+  type PortalConfig,
+} from "@repo/portal";
 import { describe, expect, it, vi } from "vitest";
-import { imageFileError, revokeUnreachableImageUrls } from "./images";
+import {
+  assetFileError,
+  imageFileError,
+  revokeUnreachableImageUrls,
+} from "./images";
 
 function withImages(logo: string | null, background: string | null) {
   return {
@@ -37,6 +45,30 @@ describe("imageFileError", () => {
     expect(imageFileError({ type: "image/png", size: 50 * 1024 * 1024 })).toBe(
       "Upload an image of 5 MB or less",
     );
+  });
+});
+
+describe("assetFileError", () => {
+  it.each(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])(
+    "accepts %s",
+    (type) => {
+      expect(assetFileError({ type, size: 2048 })).toBeNull();
+    },
+  );
+
+  it.each(["text/plain", "image/gif", ""])(
+    "rejects %s as not an image it can use",
+    (type) => {
+      expect(assetFileError({ type, size: 2048 })).toBe(
+        "Upload a PNG, JPEG, WebP or SVG image",
+      );
+    },
+  );
+
+  it("rejects an oversized SVG", () => {
+    expect(
+      assetFileError({ type: "image/svg+xml", size: IMAGE_MAX_BYTES + 1 }),
+    ).toBe("Upload an image of 5 MB or less");
   });
 });
 

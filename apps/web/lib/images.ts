@@ -1,4 +1,12 @@
-import { imageFileSchema, type PortalConfig } from "@repo/portal";
+import {
+  defaultBackgroundImageSettings,
+  imageFileSchema,
+  imageTypes,
+  type BackgroundImage,
+  type BackgroundPositionRecommendation,
+  type PortalConfig,
+} from "@repo/portal";
+import { z } from "zod";
 
 export function imageFileError(file: Pick<File, "type" | "size">) {
   const result = imageFileSchema.safeParse({
@@ -6,6 +14,39 @@ export function imageFileError(file: Pick<File, "type" | "size">) {
     size: file.size,
   });
   return result.error?.issues[0]?.message ?? null;
+}
+
+export const SVG_TYPE = "image/svg+xml";
+
+/** Formats the design assistant takes as brand assets, where SVG may only be a logo. */
+export const assetImageTypes = [...imageTypes, SVG_TYPE] as const;
+
+const assetFileSchema = imageFileSchema.extend({
+  type: z.enum(assetImageTypes, "Upload a PNG, JPEG, WebP or SVG image"),
+});
+
+export function assetFileError(file: Pick<File, "type" | "size">) {
+  const result = assetFileSchema.safeParse({
+    type: file.type,
+    size: file.size,
+  });
+  return result.error?.issues[0]?.message ?? null;
+}
+
+/** A new background image that keeps the fit and overlay of the one it replaces. */
+export function placedBackgroundImage(
+  previous: BackgroundImage | null,
+  src: string,
+  recommended: BackgroundPositionRecommendation | null,
+): BackgroundImage {
+  const settings = previous ?? defaultBackgroundImageSettings;
+  return {
+    ...defaultBackgroundImageSettings,
+    fit: settings.fit,
+    overlay: settings.overlay,
+    src,
+    recommended,
+  };
 }
 
 export function isObjectUrl(src: string) {

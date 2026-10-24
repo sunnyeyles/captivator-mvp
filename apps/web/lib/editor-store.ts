@@ -7,7 +7,6 @@ import {
   clearDeviceOverride,
   clearOverridesFor,
   colorSchema,
-  defaultBackgroundImageSettings,
   defaultTextStyle,
   guestFieldTypes,
   LOGO_ELEMENT_ID,
@@ -34,7 +33,7 @@ import type { z } from "zod";
 import { create } from "zustand";
 import type { DesignContent } from "./designs";
 import { isDeepEqual, isPlainRecord } from "./equal";
-import { revokeUnreachableImageUrls } from "./images";
+import { placedBackgroundImage, revokeUnreachableImageUrls } from "./images";
 import { findSelectedElement } from "./selected-element";
 
 type CanvasMode = Exclude<RenderMode, "published">;
@@ -577,16 +576,9 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
     placeBackgroundImage: (src, recommended) =>
       set((state) => {
         const { background } = state.config;
-        const previous = background.image ?? defaultBackgroundImageSettings;
         const parsed = backgroundSchema.safeParse({
           ...background,
-          image: {
-            ...defaultBackgroundImageSettings,
-            fit: previous.fit,
-            overlay: previous.overlay,
-            src,
-            recommended,
-          },
+          image: placedBackgroundImage(background.image, src, recommended),
         });
         if (!parsed.success) return state;
         return { config: { ...state.config, background: parsed.data } };
@@ -639,14 +631,18 @@ export const usePortalEditorStore = create<PortalEditorStore>()((
   };
 });
 
+// A streaming reply can still be undone back to its base, so the base's images stay reachable too
 function reachableConfigs(state: PortalEditorState) {
-  return [state, ...state.past, ...state.future].map((entry) => entry.config);
+  return [state, ...state.past, ...state.future, state.generationBase]
+    .filter((entry) => entry !== null)
+    .map((entry) => entry.config);
 }
 
 // An image stays alive while undo or redo can bring it back, and is revoked once nothing can
 usePortalEditorStore.subscribe((state, previous) => {
   if (
     state.config === previous.config &&
+    state.generationBase === previous.generationBase &&
     state.past === previous.past &&
     state.future === previous.future
   ) {
